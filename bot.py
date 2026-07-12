@@ -179,3 +179,14 @@ if __name__ == '__main__':
     logger.info(f"🔗 Отладочная страница: https://hubnet-bot.onrender.com/debug")
     
     app.run(host='0.0.0.0', port=port)
+   
+    # ============ ПРЯМОЙ ОБРАБОТЧИК ДЛЯ ТЕСТА ============
+
+@app.route('/test', methods=['GET'])
+def test_send():
+    """Принудительная отправка сообщения (для теста)"""
+    try:
+        bot.send_message(1186911901, "✅ Тестовое сообщение от бота!")
+        return "Сообщение отправлено!", 200
+    except Exception as e:
+        return f"Ошибка: {e}", 500
