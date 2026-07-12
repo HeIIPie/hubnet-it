@@ -2,166 +2,87 @@
 <html lang="ru">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Hubnet IT</title>
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
 
-<!-- ============ ШАПКА ============ -->
-<header class="app-header">
-    <h1 id="header-title">Hubnet IT</h1>
-</header>
+    <!-- Шапка приложения -->
+    <header class="app-header">
+        <h1 id="header-title">Hubnet IT</h1>
+    </header>
 
-<!-- ============ ЭКРАН 1: ГЛАВНАЯ ============ -->
-<main id="main-screen" class="screen active">
-    <div class="content-body">
-        <!-- Баннер -->
+    <!-- ЭКРАН 1: ГЛАВНОЕ МЕНЮ -->
+    <main id="main-screen" class="dashboard">
         <div class="main-banner">
-            <img src="images/had-banner.png" alt="Hubnet IT" class="banner-img">
+            <!-- Имя файлаhad-banner.png, как мы выяснили -->
+            <img src="images/had-banner.png" alt="Hubnet IT" style="width: 100%; border-radius: 12px;">
         </div>
 
-        <!-- Кнопка профиля -->
-        <button class="profile-main-btn" id="btn-profile">
-            👤 Мой Профиль
-        </button>
+        <div class="content-body">
+            <!-- Большая кнопка профиля по центру -->
+            <button class="profile-main-btn" id="btn-profile">
+                👤 Мой Профиль
+            </button>
 
-        <!-- Направления -->
-        <h2 class="block-title">Направления</h2>
-        <div class="courses-grid">
-            <button class="course-card" data-screen="networks">
-                <span class="course-icon">🌐</span>
-                Сети
-            </button>
-            <button class="course-card locked" disabled>
-                <span class="course-icon">🛡</span>
-                QA (Скоро)
-            </button>
-            <button class="course-card locked" disabled>
-                <span class="course-icon">🐍</span>
-                Python (Скоро)
-            </button>
-            <button class="course-card locked" disabled>
-                <span class="course-icon">📝</span>
-                Квизы (Скоро)
-            </button>
+            <h2 class="block-title">Направления</h2>
+            <div class="courses-grid">
+                <button class="course-card" id="btn-networks">🌐 Сети</button>
+                <button class="course-card" style="opacity: 0.5;" disabled>🛡 QA (Скоро)</button>
+                <button class="course-card" style="opacity: 0.5;" disabled>🐍 Python (Скоро)</button>
+            </div>
         </div>
-    </div>
-</main>
+    </main>
 
-<!-- ============ ЭКРАН 2: СЕТИ ============ -->
-<main id="networks-screen" class="screen">
-    <div class="content-body">
-        <div class="main-banner">
-            <img src="images/networks-banner.png" alt="Компьютерные сети" class="banner-img">
+    <!-- ЭКРАН 2: РАЗДЕЛ СЕТЕЙ -->
+    <main id="networks-screen" class="dashboard hidden">
+        <div class="content-body">
+            <button id="btn-back-networks" class="back-button">← Назад в меню</button>
+            <div class="main-banner">
+                <img src="images/networks-banner.png" alt="Компьютерные сети" style="width: 100%; border-radius: 12px;">
+            </div>
+            <h2 class="block-title">Компьютерные сети "на пальцах"</h2>
+            
+            <div class="lessons-list">
+                <!-- Сюда потом вернутся твои уроки -->
+                <div class="lesson-item">Урок 1: Что такое IP-адрес?</div>
+            </div>
         </div>
-        <h2 class="block-title">Компьютерные сети "на пальцах"</h2>
-        
-        <div class="lessons-list">
-            <div class="lesson-card" data-lesson="1" data-unlocked="true">
-                <div class="lesson-info">
-                    <span class="lesson-icon">📚</span>
-                    <div>
-                        <div class="lesson-title">Урок 1: Что такое IP-адрес?</div>
-                        <div class="lesson-meta">⭐ 50 XP</div>
+    </main>
+
+    <!-- ЭКРАН 3: ПРОФИЛЬ -->
+    <main id="profile-screen" class="dashboard hidden">
+        <div class="content-body">
+            <button id="btn-back-profile" class="back-button">← Назад в меню</button>
+            
+            <div class="profile-card">
+                <div class="profile-avatar">👤</div>
+                <h2 class="profile-name">Денис</h2>
+                <p class="profile-role">Студент академии</p>
+                
+                <div class="stats-container">
+                    <div class="stat-box">
+                        <span class="stat-val">1 / 5</span>
+                        <span class="stat-lbl">Уроков</span>
+                    </div>
+                    <div class="stat-box">
+                        <span class="stat-val" id="user-xp">150</span>
+                        <span class="stat-lbl">Очков XP</span>
                     </div>
                 </div>
-                <button class="lesson-btn" data-lesson="1">Начать →</button>
-            </div>
-            
-            <div class="lesson-card" data-lesson="2" data-unlocked="true">
-                <div class="lesson-info">
-                    <span class="lesson-icon">🌐</span>
-                    <div>
-                        <div class="lesson-title">Урок 2: DNS-серверы</div>
-                        <div class="lesson-meta">⭐ 50 XP</div>
-                    </div>
+
+                <div class="xp-info">
+                    <p>💡 <strong>Как получать очки:</strong></p>
+                    <ul>
+                        <li>За пройденный урок: +50 XP</li>
+                        <li>За успешный квиз: +25 XP</li>
+                    </ul>
                 </div>
-                <button class="lesson-btn" data-lesson="2">Начать →</button>
-            </div>
-            
-            <div class="lesson-card locked" data-lesson="3" data-unlocked="false">
-                <div class="lesson-info">
-                    <span class="lesson-icon">🔒</span>
-                    <div>
-                        <div class="lesson-title">Урок 3: Протоколы TCP/IP</div>
-                        <div class="lesson-meta">🔒 Требуется 100 XP</div>
-                    </div>
-                </div>
-                <span class="lock-icon">🔒</span>
-            </div>
-            
-            <div class="lesson-card locked" data-lesson="4" data-unlocked="false">
-                <div class="lesson-info">
-                    <span class="lesson-icon">🔒</span>
-                    <div>
-                        <div class="lesson-title">Урок 4: Сетевая безопасность</div>
-                        <div class="lesson-meta">🔒 Требуется 200 XP</div>
-                    </div>
-                </div>
-                <span class="lock-icon">🔒</span>
             </div>
         </div>
-    </div>
-</main>
+    </main>
 
-<!-- ============ ЭКРАН 3: ПРОФИЛЬ ============ -->
-<main id="profile-screen" class="screen">
-    <div class="content-body">
-        <div class="profile-card">
-            <div class="profile-avatar">👤</div>
-            <h2 class="profile-name" id="user-name">Денис</h2>
-            <p class="profile-role">Студент академии</p>
-            
-            <div class="stats-container">
-                <div class="stat-box">
-                    <span class="stat-val" id="user-lessons">0 / 4</span>
-                    <span class="stat-lbl">Уроков пройдено</span>
-                </div>
-                <div class="stat-box">
-                    <span class="stat-val" id="user-xp">0</span>
-                    <span class="stat-lbl">Очков XP</span>
-                </div>
-            </div>
-
-            <div class="progress-section">
-                <h3>🎯 Твой прогресс</h3>
-                <div class="progress-bar-container">
-                    <div class="progress-bar" id="progress-bar" style="width: 0%"></div>
-                </div>
-                <span class="progress-text" id="progress-text">0% до следующего уровня</span>
-            </div>
-
-            <div class="xp-info">
-                <p>💡 <strong>Как получать очки:</strong></p>
-                <ul>
-                    <li>За пройденный урок: +50 XP</li>
-                    <li>За успешный квиз: +25 XP</li>
-                    <li>За ежедневный вход: +10 XP</li>
-                </ul>
-            </div>
-        </div>
-    </div>
-</main>
-
-<!-- ============ НИЖНЯЯ НАВИГАЦИЯ ============ -->
-<nav class="bottom-nav">
-    <button class="nav-btn active" data-screen="main">
-        <span class="nav-icon">🏠</span>
-        <span class="nav-label">Главная</span>
-    </button>
-    <button class="nav-btn" data-screen="networks">
-        <span class="nav-icon">🌐</span>
-        <span class="nav-label">Сети</span>
-    </button>
-    <button class="nav-btn" data-screen="profile">
-        <span class="nav-icon">👤</span>
-        <span class="nav-label">Профиль</span>
-    </button>
-</nav>
-
-<script src="https://telegram.org/js/telegram-web-app.js"></script>
-<script src="app.js"></script>
-
+    <script src="app.js"></script>
 </body>
 </html>
