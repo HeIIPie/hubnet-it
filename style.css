@@ -1,41 +1,32 @@
-/* Базовые настройки */
 body {
     margin: 0;
     padding: 0;
-    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
     background-color: #0f172a;
     color: #f8fafc;
     -webkit-user-select: none;
+    -moz-user-select: none;
+    -ms-user-select: none;
     user-select: none;
 }
 
+/* Главный класс для скрытия экранов */
 .hidden {
     display: none !important;
 }
 
-/* Шапка */
 .app-header {
     background-color: #1e293b;
     padding: 15px;
     text-align: center;
     border-bottom: 1px solid #334155;
 }
-.app-header h1 {
-    margin: 0;
-    font-size: 20px;
-}
+.app-header h1 { margin: 0; font-size: 20px; }
 
-/* Контейнер для контента с отступами по бокам */
-.content-body {
-    padding: 0 15px;
-    margin-top: 15px;
-}
+.content-body { padding: 15px; }
+.main-banner { margin-bottom: 15px; }
 
-.main-banner {
-    margin-bottom: 15px;
-}
-
-/* Кнопка Профиля по центру */
+/* Большая кнопка профиля */
 .profile-main-btn {
     width: 100%;
     background: linear-gradient(135deg, #3b82f6, #1d4ed8);
@@ -46,27 +37,14 @@ body {
     font-size: 16px;
     font-weight: bold;
     margin-bottom: 20px;
-    box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
     cursor: pointer;
 }
-.profile-main-btn:active {
-    transform: scale(0.98);
-}
 
-/* Сетка направлений */
-.block-title {
-    font-size: 18px;
-    color: #94a3b8;
-    margin: 20px 0 12px 0;
-}
+.block-title { font-size: 18px; color: #94a3b8; margin: 20px 0 12px 0; }
 
-.courses-grid {
-    display: flex;
-    flex-direction: column;
-    gap: 10px;
-}
+.courses-grid { display: flex; flex-direction: column; gap: 10px; }
 
-.course-card, .back-button {
+.course-card, .back-button, .action-btn {
     background: #1e293b;
     color: white;
     border: 1px solid #334155;
@@ -76,43 +54,27 @@ body {
     text-align: left;
     cursor: pointer;
 }
-.back-button {
-    margin-bottom: 15px;
-    background: #334155;
-}
+.back-button { background: #334155; margin-bottom: 15px; width: 100%; }
 
-/* Карточка профиля */
-.profile-card {
+/* Уроки */
+.lessons-list { display: flex; flex-direction: column; gap: 12px; }
+.lesson-item {
     background: #1e293b;
     border: 1px solid #334155;
-    border-radius: 16px;
-    padding: 24px;
-    text-align: center;
-}
-.profile-avatar { font-size: 50px; margin-bottom: 10px; }
-.profile-name { margin: 5px 0; font-size: 22px; }
-.profile-role { color: #94a3b8; font-size: 14px; margin-bottom: 25px; }
-
-.stats-container {
-    display: flex;
-    gap: 15px;
-    margin-bottom: 25px;
-}
-.stat-box {
-    background: #0f172a;
-    border: 1px solid #334155;
-    flex: 1;
     padding: 15px;
     border-radius: 12px;
 }
-.stat-val { display: block; font-size: 20px; font-weight: bold; color: #38bdf8; }
+.lesson-item p { margin: 0 0 8px 0; font-size: 16px; }
+.xp-badge { display: block; font-size: 14px; color: #eab308; margin-bottom: 10px; }
+.lesson-item.locked { opacity: 0.6; }
+.action-btn { padding: 8px 16px; font-size: 14px; background: #3b82f6; border: none; }
+
+/* Профиль */
+.profile-card { background: #1e293b; border: 1px solid #334155; border-radius: 16px; padding: 20px; text-align: center; }
+.profile-avatar { font-size: 45px; margin-bottom: 5px; }
+.profile-name { margin: 5px 0; font-size: 20px; }
+.profile-role { color: #94a3b8; font-size: 14px; margin-bottom: 20px; }
+.stats-container { display: flex; gap: 10px; }
+.stat-box { background: #0f172a; border: 1px solid #334155; flex: 1; padding: 12px; border-radius: 10px; }
+.stat-val { display: block; font-size: 18px; font-weight: bold; color: #38bdf8; }
 .stat-lbl { font-size: 12px; color: #64748b; }
-
-.xp-info {
-    text-align: left;
-    background: #0f172a;
-    padding: 15px;
-    border-radius: 12px;
-    font-size: 14px;
-}
-.xp-info ul { margin: 5px 0 0 20px; padding: 0; }

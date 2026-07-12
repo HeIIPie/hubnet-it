@@ -10,7 +10,7 @@ const btnProfile = document.getElementById('btn-profile');
 const btnBackNetworks = document.getElementById('btn-back-networks');
 const btnBackProfile = document.getElementById('btn-back-profile');
 
-// Переход в Сети
+// Открыть Сети
 btnNetworks.addEventListener('click', () => {
     mainScreen.classList.add('hidden');
     networksScreen.classList.remove('hidden');
@@ -24,7 +24,7 @@ btnBackNetworks.addEventListener('click', () => {
     headerTitle.textContent = 'Hubnet IT';
 });
 
-// Переход в Профиль
+// Открыть Профиль
 btnProfile.addEventListener('click', () => {
     mainScreen.classList.add('hidden');
     profileScreen.classList.remove('hidden');

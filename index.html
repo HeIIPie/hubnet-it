@@ -4,24 +4,22 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Hubnet IT</title>
-    <link rel="stylesheet" href="style.css?v=1.1">
+    <link rel="stylesheet" href="style.css?v=1.2">
 </head>
 <body>
 
-    <!-- Шапка приложения -->
     <header class="app-header">
         <h1 id="header-title">Hubnet IT</h1>
     </header>
 
-    <!-- ЭКРАН 1: ГЛАВНОЕ МЕНЮ -->
-    <main id="main-screen" class="dashboard">
-        <div class="main-banner">
-            <!-- Имя файлаhad-banner.png, как мы выяснили -->
-            <img src="images/had-banner.png" alt="Hubnet IT" style="width: 100%; border-radius: 12px;">
-        </div>
+    <div class="content-body">
+        
+        <!-- ЭКРАН 1: ГЛАВНОЕ МЕНЮ -->
+        <main id="main-screen">
+            <div class="main-banner">
+                <img src="images/had-banner.png" alt="Hubnet IT" style="width: 100%; border-radius: 12px;">
+            </div>
 
-        <div class="content-body">
-            <!-- Большая кнопка профиля по центру -->
             <button class="profile-main-btn" id="btn-profile">
                 👤 Мой Профиль
             </button>
@@ -29,31 +27,49 @@
             <h2 class="block-title">Направления</h2>
             <div class="courses-grid">
                 <button class="course-card" id="btn-networks">🌐 Сети</button>
-                <button class="course-card" style="opacity: 0.5;" disabled>🛡 QA (Скоро)</button>
-                <button class="course-card" style="opacity: 0.5;" disabled>🐍 Python (Скоро)</button>
+                <button class="course-card" disabled style="opacity: 0.5;">🛡 QA (Скоро)</button>
+                <button class="course-card" disabled style="opacity: 0.5;">🐍 Python (Скоро)</button>
+                <button class="course-card" disabled style="opacity: 0.5;">📝 Квизы (Скоро)</button>
             </div>
-        </div>
-    </main>
+        </main>
 
-    <!-- ЭКРАН 2: РАЗДЕЛ СЕТЕЙ -->
-    <main id="networks-screen" class="dashboard hidden">
-        <div class="content-body">
+        <!-- ЭКРАН 2: УРОКИ СЕТЕЙ -->
+        <main id="networks-screen" class="hidden">
             <button id="btn-back-networks" class="back-button">← Назад в меню</button>
+            
             <div class="main-banner">
                 <img src="images/networks-banner.png" alt="Компьютерные сети" style="width: 100%; border-radius: 12px;">
             </div>
+            
             <h2 class="block-title">Компьютерные сети "на пальцах"</h2>
             
             <div class="lessons-list">
-                <!-- Сюда потом вернутся твои уроки -->
-                <div class="lesson-item">Урок 1: Что такое IP-адрес?</div>
+                <div class="lesson-item">
+                    <p>📚 Урок 1: Что такое IP-адрес?</p>
+                    <span class="xp-badge">⭐ 50 XP</span>
+                    <button class="action-btn">Начать →</button>
+                </div>
+                
+                <div class="lesson-item">
+                    <p>🌐 Урок 2: DNS-серверы</p>
+                    <span class="xp-badge">⭐ 50 XP</span>
+                    <button class="action-btn">Начать →</button>
+                </div>
+                
+                <div class="lesson-item locked">
+                    <p>🔒 Урок 3: Протоколы TCP/IP</p>
+                    <span class="xp-badge">🔒 Требуется 100 XP</span>
+                </div>
+                
+                <div class="lesson-item locked">
+                    <p>🔒 Урок 4: Сетевая безопасность</p>
+                    <span class="xp-badge">🔒 Требуется 200 XP</span>
+                </div>
             </div>
-        </div>
-    </main>
+        </main>
 
-    <!-- ЭКРАН 3: ПРОФИЛЬ -->
-    <main id="profile-screen" class="dashboard hidden">
-        <div class="content-body">
+        <!-- ЭКРАН 3: ПРОФИЛЬ ДЕНИСА -->
+        <main id="profile-screen" class="hidden">
             <button id="btn-back-profile" class="back-button">← Назад в меню</button>
             
             <div class="profile-card">
@@ -63,25 +79,18 @@
                 
                 <div class="stats-container">
                     <div class="stat-box">
-                        <span class="stat-val">1 / 5</span>
-                        <span class="stat-lbl">Уроков</span>
+                        <span class="stat-val">0 / 4</span>
+                        <span class="stat-lbl">Уроков пройдено</span>
                     </div>
                     <div class="stat-box">
-                        <span class="stat-val" id="user-xp">150</span>
+                        <span class="stat-val">0</span>
                         <span class="stat-lbl">Очков XP</span>
                     </div>
                 </div>
-
-                <div class="xp-info">
-                    <p>💡 <strong>Как получать очки:</strong></p>
-                    <ul>
-                        <li>За пройденный урок: +50 XP</li>
-                        <li>За успешный квиз: +25 XP</li>
-                    </ul>
-                </div>
             </div>
-        </div>
-    </main>
+        </main>
+
+    </div>
 
     <script src="app.js"></script>
 </body>
