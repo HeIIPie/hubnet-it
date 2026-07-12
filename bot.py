@@ -180,7 +180,7 @@ if __name__ == '__main__':
     
     app.run(host='0.0.0.0', port=port)
    
-    # ============ ПРЯМОЙ ОБРАБОТЧИК ДЛЯ ТЕСТА ============
+# ============ ПРЯМОЙ ОБРАБОТЧИК ДЛЯ ТЕСТА ============
 
 @app.route('/test', methods=['GET'])
 def test_send():
@@ -190,3 +190,13 @@ def test_send():
         return "Сообщение отправлено!", 200
     except Exception as e:
         return f"Ошибка: {e}", 500
+
+# ============ ЗАПУСК ============
+
+if __name__ == '__main__':
+    port = int(os.getenv('PORT', 5000))
+    logger.info(f"🚀 Бот запущен на порту {port}")
+    logger.info(f"🔗 Ссылка на вебхук: https://hubnet-bot.onrender.com/webhook")
+    logger.info(f"🔗 Ссылка на главную: https://hubnet-bot.onrender.com")
+    logger.info(f"🔗 Отладочная страница: https://hubnet-bot.onrender.com/debug")
+    app.run(host='0.0.0.0', port=port)
