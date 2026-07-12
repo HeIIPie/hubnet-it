@@ -33,32 +33,38 @@ app = Flask(__name__)
 
 @bot.message_handler(commands=['start'])
 def start_message(message):
-    user_id = message.from_user.id
-    first_name = message.from_user.first_name or "Друг"
-    
-    markup = types.InlineKeyboardMarkup()
-    web_app_url = f"{WEB_APP_URL}?user_id={user_id}&name={first_name}"
-    web_app = types.WebAppInfo(web_app_url)
-    
-    button = types.InlineKeyboardButton(
-        text="🚀 Начать учиться",
-        web_app=web_app
-    )
-    markup.add(button)
-    
-    welcome_text = (
-        f"Привет, {first_name}! 👋\n\n"
-        "Добро пожаловать в академию **Hubnet IT**.\n"
-        "Нажми на кнопку ниже, чтобы открыть приложение."
-    )
-    
-    bot.send_message(
-        message.chat.id,
-        welcome_text,
-        reply_markup=markup,
-        parse_mode="Markdown"
-    )
-    logger.info(f"Пользователь {user_id} запустил бота")
+    try:
+        user_id = message.from_user.id
+        first_name = message.from_user.first_name or "Друг"
+        
+        logger.info(f"📩 Получена команда /start от {user_id} ({first_name})")
+        
+        markup = types.InlineKeyboardMarkup()
+        web_app_url = f"{WEB_APP_URL}?user_id={user_id}&name={first_name}"
+        web_app = types.WebAppInfo(web_app_url)
+        
+        button = types.InlineKeyboardButton(
+            text="🚀 Начать учиться",
+            web_app=web_app
+        )
+        markup.add(button)
+        
+        welcome_text = (
+            f"Привет, {first_name}! 👋\n\n"
+            "Добро пожаловать в академию **Hubnet IT**.\n"
+            "Нажми на кнопку ниже, чтобы открыть приложение."
+        )
+        
+        bot.send_message(
+            message.chat.id,
+            welcome_text,
+            reply_markup=markup,
+            parse_mode="Markdown"
+        )
+        logger.info(f"✅ Ответ отправлен пользователю {user_id}")
+        
+    except Exception as e:
+        logger.error(f"❌ Ошибка в start_message: {e}")
 
 @bot.message_handler(content_types=['web_app_data'])
 def handle_web_app_data(message):
@@ -69,7 +75,7 @@ def handle_web_app_data(message):
         lesson_id = data.get('lesson_id')
         user_id = data.get('user_id')
         
-        logger.info(f"Получены данные от {user_id}: {data}")
+        logger.info(f"📩 Получены данные от {user_id}: {data}")
         
         if action == 'start_lesson':
             bot.send_message(
@@ -88,30 +94,19 @@ def handle_web_app_data(message):
                 f"ℹ️ Получено действие: {action}"
             )
     except Exception as e:
-        logger.error(f"Ошибка обработки web_app_data: {e}")
+        logger.error(f"❌ Ошибка обработки web_app_data: {e}")
 
-@bot.message_handler(commands=['help'])
-def help_message(message):
-    help_text = (
-        "📖 **Помощь по боту Hubnet IT**\n\n"
-        "Команды:\n"
-        "/start - Начать обучение\n"
-        "/help - Показать эту справку\n\n"
-        "💡 Используй кнопку 'Начать учиться' чтобы открыть приложение."
-    )
-    bot.send_message(message.chat.id, help_text, parse_mode="Markdown")
+# ============ ТЕСТОВЫЙ ОБРАБОТЧИК ============
 
-# ============ ВЕБХУК ДЛЯ RENDER ============
-
-# Устанавливаем вебхук при запуске
-def set_webhook():
-    webhook_url = f"https://hubnet-bot.onrender.com/webhook"
+@bot.message_handler(func=lambda message: True)
+def echo_all_messages(message):
     try:
-        bot.remove_webhook()
-        bot.set_webhook(url=webhook_url)
-        logger.info(f"✅ Вебхук установлен: {webhook_url}")
+        logger.info(f"📩 Получено текстовое сообщение: {message.text}")
+        bot.reply_to(message, f"Я получил твоё сообщение: {message.text}")
     except Exception as e:
-        logger.error(f"❌ Ошибка установки вебхука: {e}")
+        logger.error(f"❌ Ошибка в echo: {e}")
+
+# ============ ВЕБХУК ============
 
 @app.route('/webhook', methods=['POST'])
 def webhook():
@@ -121,7 +116,7 @@ def webhook():
         bot.process_new_updates([update])
         return "OK", 200
     except Exception as e:
-        logger.error(f"Ошибка вебхука: {e}")
+        logger.error(f"❌ Ошибка вебхука: {e}")
         return "Error", 500
 
 @app.route('/', methods=['GET'])
@@ -131,9 +126,6 @@ def index():
 # ============ ЗАПУСК ============
 
 if __name__ == '__main__':
-    # Устанавливаем вебхук перед запуском
-    set_webhook()
-    
     port = int(os.getenv('PORT', 5000))
     logger.info(f"🚀 Бот запущен на порту {port}")
     app.run(host='0.0.0.0', port=port)
