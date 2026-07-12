@@ -1,0 +1,23 @@
+# Секреты и токены
+.env
+
+# Python
+__pycache__/
+*.pyc
+venv/
+env/
+*.pyo
+*.pyd
+.Python
+
+# Редакторы
+.vscode/
+.idea/
+*.swp
+*.swo
+.DS_Store
+
+# Логи и временные файлы
+*.log
+*.tmp
+*.temp
