@@ -34,17 +34,17 @@ logger.info(f"✅ Токен получен: {TOKEN[:10]}... (скрыто)")
 bot = telebot.TeleBot(TOKEN)
 app = Flask(__name__)
 
-# ============ ОБРАБОТЧИКИ КОМАНД ============
+# ============ ОБРАБОТЧИКИ КОМАНД (для совместимости) ============
 
 @bot.message_handler(commands=['start'])
 def start_message(message):
+    """Обработчик /start (для polling, но мы используем вебхук)"""
     try:
         user_id = message.from_user.id
         first_name = message.from_user.first_name or "Друг"
         
-        logger.info(f"📩 Получена команда /start от {user_id} ({first_name})")
+        logger.info(f"📩 Получена команда /start от {user_id} ({first_name}) через обработчик")
         
-        # Создаём кнопку с мини-аппом
         markup = types.InlineKeyboardMarkup()
         web_app_url = f"{WEB_APP_URL}?user_id={user_id}&name={first_name}"
         web_app = types.WebAppInfo(web_app_url)
@@ -55,14 +55,12 @@ def start_message(message):
         )
         markup.add(button)
         
-        # Приветственное сообщение
         welcome_text = (
             f"Привет, {first_name}! 👋\n\n"
             "Добро пожаловать в академию **Hubnet IT**.\n"
             "Нажми на кнопку ниже, чтобы открыть приложение."
         )
         
-        # Отправляем ответ
         bot.send_message(
             message.chat.id,
             welcome_text,
@@ -79,7 +77,6 @@ def start_message(message):
 @bot.message_handler(content_types=['web_app_data'])
 def handle_web_app_data(message):
     try:
-        # Парсим данные из мини-аппа
         data = json.loads(message.web_app_data.data)
         action = data.get('action')
         user_name = data.get('user_name', 'Студент')
@@ -126,28 +123,74 @@ def echo_all_messages(message):
         logger.error(f"❌ Ошибка в echo: {e}")
         logger.exception("Подробности:")
 
-# ============ ВЕБХУК ============
+# ============ ВЕБХУК С ПРЯМОЙ ОБРАБОТКОЙ ============
 
 @app.route('/webhook', methods=['POST'])
 def webhook():
     try:
-        # Читаем входящий запрос
         json_str = request.stream.read().decode('utf-8')
-        
-        # Логируем первые 500 символов для отладки
         logger.info(f"📥 Входящий вебхук (первые 500 символов): {json_str[:500]}...")
         
-        # Обрабатываем обновление
+        # Парсим данные
+        data = json.loads(json_str)
+        
+        # Проверяем, есть ли сообщение
+        if 'message' in data:
+            message = data['message']
+            text = message.get('text', '')
+            chat_id = message['chat']['id']
+            user_id = message['from']['id']
+            first_name = message['from'].get('first_name', 'Друг')
+            
+            # ===== ПРЯМАЯ ОБРАБОТКА /start =====
+            if text and text.startswith('/start'):
+                logger.info(f"📩 Прямая обработка /start от {user_id}")
+                
+                # Создаём кнопку
+                markup = types.InlineKeyboardMarkup()
+                web_app_url = f"{WEB_APP_URL}?user_id={user_id}&name={first_name}"
+                web_app = types.WebAppInfo(web_app_url)
+                button = types.InlineKeyboardButton("🚀 Начать учиться", web_app=web_app)
+                markup.add(button)
+                
+                # Отправляем приветствие
+                bot.send_message(
+                    chat_id,
+                    f"Привет, {first_name}! 👋\n\n"
+                    "Добро пожаловать в академию **Hubnet IT**.\n"
+                    "Нажми на кнопку ниже, чтобы открыть приложение.",
+                    reply_markup=markup,
+                    parse_mode="Markdown"
+                )
+                
+                logger.info(f"✅ Ответ отправлен пользователю {user_id} через прямую обработку")
+                return "OK", 200
+            
+            # ===== ПРЯМАЯ ОБРАБОТКА ТЕКСТОВЫХ СООБЩЕНИЙ =====
+            elif text:
+                logger.info(f"📩 Прямая обработка текстового сообщения: '{text}' от {user_id}")
+                bot.send_message(
+                    chat_id,
+                    f"Я получил твоё сообщение: {text}\n\nПопробуй команду /start"
+                )
+                logger.info(f"✅ Ответ отправлен на текстовое сообщение через прямую обработку")
+                return "OK", 200
+        
+        # ===== ОБРАБОТКА ДРУГИХ ТИПОВ =====
         update = telebot.types.Update.de_json(json_str)
         bot.process_new_updates([update])
         
-        logger.info("✅ Вебхук обработан успешно")
         return "OK", 200
         
+    except json.JSONDecodeError as e:
+        logger.error(f"❌ Ошибка парсинга JSON: {e}")
+        return "Error: Invalid JSON", 400
     except Exception as e:
         logger.error(f"❌ Ошибка в вебхуке: {e}")
         logger.exception("Подробности:")
         return "Error", 500
+
+# ============ ДРУГИЕ ЭНДПОИНТЫ ============
 
 @app.route('/', methods=['GET'])
 def index():
@@ -169,19 +212,6 @@ def debug():
         "webhook_url": "https://hubnet-bot.onrender.com/webhook"
     }, 200
 
-# ============ ЗАПУСК ============
-
-if __name__ == '__main__':
-    port = int(os.getenv('PORT', 5000))
-    logger.info(f"🚀 Бот запущен на порту {port}")
-    logger.info(f"🔗 Ссылка на вебхук: https://hubnet-bot.onrender.com/webhook")
-    logger.info(f"🔗 Ссылка на главную: https://hubnet-bot.onrender.com")
-    logger.info(f"🔗 Отладочная страница: https://hubnet-bot.onrender.com/debug")
-    
-    app.run(host='0.0.0.0', port=port)
-   
-# ============ ПРЯМОЙ ОБРАБОТЧИК ДЛЯ ТЕСТА ============
-
 @app.route('/test', methods=['GET'])
 def test_send():
     """Принудительная отправка сообщения (для теста)"""
@@ -199,4 +229,6 @@ if __name__ == '__main__':
     logger.info(f"🔗 Ссылка на вебхук: https://hubnet-bot.onrender.com/webhook")
     logger.info(f"🔗 Ссылка на главную: https://hubnet-bot.onrender.com")
     logger.info(f"🔗 Отладочная страница: https://hubnet-bot.onrender.com/debug")
+    logger.info(f"🔗 Тестовая страница: https://hubnet-bot.onrender.com/test")
+    
     app.run(host='0.0.0.0', port=port)
