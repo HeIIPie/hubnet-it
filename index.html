@@ -3,95 +3,406 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Hubnet IT</title>
-    <link rel="stylesheet" href="style.css?v=1.2">
+    <title>HubNet IT Academy</title>
+    <!-- Подключаем стильный футуристичный шрифт -->
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@500;800&family=Share+Tech+Mono&family=Ubuntu:wght@400;500;700&display=swap" rel="stylesheet">
+    <style>
+        /* Базовые стили */
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        body {
+            background-color: #03060f; /* Глубокий темный фон */
+            color: #ffffff;
+            font-family: 'Ubuntu', sans-serif;
+            overflow: hidden;
+            height: 100vh;
+            width: 100vw;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        /* Ограничиваем область просмотра размерами мобильного телефона */
+        .phone-wrapper {
+            width: 100%;
+            max-width: 420px;
+            height: 100%;
+            max-height: 850px;
+            background: #050914;
+            position: relative;
+            overflow: hidden;
+            box-shadow: 0 0 40px rgba(0, 210, 255, 0.05);
+            display: flex;
+            flex-direction: column;
+        }
+
+        /* На больших экранах добавим аккуратную рамку */
+        @media (min-width: 480px) {
+            .phone-wrapper {
+                height: 92vh;
+                border: 1px solid rgba(0, 210, 255, 0.15);
+                border-radius: 24px;
+            }
+        }
+
+        /* --- ЭКРАН 1: LINUX-ЗАГРУЗКА (Показывается СРАЗУ при старте) --- */
+        #terminal-screen {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: #000000;
+            color: #39ff14; /* Яркий неоново-зеленый */
+            font-family: 'Share Tech Mono', monospace;
+            padding: 25px 20px;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            z-index: 90;
+            transition: opacity 0.5s ease;
+        }
+
+        .terminal-logs {
+            font-size: 11px;
+            line-height: 1.6;
+            flex-grow: 1;
+            overflow-y: auto;
+            padding-right: 10px;
+            scrollbar-width: none; /* Firefox */
+        }
+        .terminal-logs::-webkit-scrollbar {
+            display: none; /* Chrome/Safari */
+        }
+
+        .log-line {
+            display: none;
+            margin-bottom: 8px;
+        }
+
+        .terminal-footer {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            border-top: 1px solid rgba(57, 255, 20, 0.2);
+            padding-top: 15px;
+            margin-bottom: 10px;
+        }
+
+        .spinner {
+            width: 20px;
+            height: 20px;
+            border: 2px solid rgba(57, 255, 20, 0.2);
+            border-top-color: #39ff14;
+            border-radius: 50%;
+            animation: spin 1s infinite linear;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        /* --- ЭКРАН 2: ГЛАВНЫЙ ЭКРАН --- */
+        #main-app {
+            height: 100%;
+            width: 100%;
+            display: flex;
+            flex-direction: column;
+            padding: 20px;
+            opacity: 0;
+            transition: opacity 0.8s ease;
+            overflow-y: auto;
+        }
+
+        #main-app.active {
+            opacity: 1;
+        }
+
+        /* Логотип сверху */
+        .app-header {
+            width: 100%;
+            margin-bottom: 15px;
+            display: flex;
+            justify-content: center;
+            min-height: 100px;
+        }
+
+        .app-header-logo {
+            width: 100%;
+            height: auto;
+            border-radius: 12px;
+            box-shadow: 0 0 25px rgba(0, 162, 255, 0.1);
+        }
+
+        /* Заглушка на случай ошибки загрузки картинки */
+        .logo-placeholder {
+            font-family: 'Orbitron', sans-serif;
+            font-size: 24px;
+            font-weight: 800;
+            letter-spacing: 2px;
+            color: #00d2ff;
+            text-shadow: 0 0 10px rgba(0, 210, 255, 0.5);
+            text-align: center;
+            padding: 20px 0;
+            text-transform: uppercase;
+        }
+
+        /* Блок "Мой профиль" со светящимися неоновыми полосами */
+        .profile-section {
+            width: 100%;
+            margin: 10px 0 25px 0;
+            position: relative;
+            padding: 12px 0;
+        }
+
+        .profile-section::before,
+        .profile-section::after {
+            content: '';
+            position: absolute;
+            left: 0;
+            width: 100%;
+            height: 2px;
+            background: linear-gradient(90deg, transparent, #00d2ff, #0066ff, transparent);
+            box-shadow: 0 0 8px #00d2ff, 0 0 15px #0066ff;
+        }
+
+        .profile-section::before { top: 0; }
+        .profile-section::after { bottom: 0; }
+
+        .profile-btn {
+            width: 100%;
+            background: linear-gradient(135deg, rgba(0, 102, 255, 0.08), rgba(0, 210, 255, 0.12));
+            border: 1px solid rgba(0, 210, 255, 0.25);
+            border-radius: 8px;
+            color: #ffffff;
+            font-family: 'Orbitron', sans-serif;
+            font-size: 15px;
+            font-weight: 800;
+            letter-spacing: 2px;
+            padding: 14px;
+            text-transform: uppercase;
+            cursor: pointer;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 12px;
+            transition: all 0.25s ease;
+        }
+
+        .profile-btn:active {
+            background: linear-gradient(135deg, rgba(0, 102, 255, 0.2), rgba(0, 210, 255, 0.3));
+            box-shadow: inset 0 0 10px rgba(0, 210, 255, 0.4);
+            transform: scale(0.98);
+        }
+
+        /* Список разделов (кнопки) */
+        .menu-list {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            flex-grow: 1;
+        }
+
+        .menu-item {
+            background: #090f20;
+            border: 1px solid rgba(255, 255, 255, 0.03);
+            border-radius: 10px;
+            padding: 16px 20px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            cursor: pointer;
+            transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .menu-item:active {
+            background: #111b34;
+            border-color: rgba(0, 210, 255, 0.3);
+            transform: scale(0.98);
+        }
+
+        .menu-item-info {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .menu-item-icon {
+            font-size: 20px;
+            width: 28px;
+            display: flex;
+            justify-content: center;
+        }
+
+        .menu-item-title {
+            font-size: 14px;
+            font-weight: 500;
+            letter-spacing: 0.5px;
+            color: rgba(255, 255, 255, 0.95);
+        }
+
+        .menu-item-arrow {
+            color: rgba(0, 210, 255, 0.3);
+            font-size: 12px;
+            transition: transform 0.2s;
+        }
+
+        .menu-item:active .menu-item-arrow {
+            transform: translateX(3px);
+            color: #00d2ff;
+        }
+    </style>
 </head>
 <body>
 
-    <header class="app-header">
-        <h1 id="header-title">Hubnet IT</h1>
-    </header>
+    <div class="phone-wrapper">
 
-    <div class="content-body">
-        
-        <!-- ЭКРАН 1: ГЛАВНОЕ МЕНЮ -->
-        <main id="main-screen">
-            <div class="main-banner">
-                <img src="images/had-banner.png" alt="Hubnet IT" style="width: 100%; border-radius: 12px;">
-            </div>
-
-            <button class="profile-main-btn" id="btn-profile">
-                👤 Мой Профиль
-            </button>
-
-            <h2 class="block-title">Направления</h2>
-            <div class="courses-grid">
-                <button class="course-card" id="btn-networks">🌐 Сети</button>
-                <button class="course-card" disabled style="opacity: 0.5;">🛡 QA (Скоро)</button>
-                <button class="course-card" disabled style="opacity: 0.5;">🐍 Python (Скоро)</button>
-                <button class="course-card" disabled style="opacity: 0.5;">📝 Квизы (Скоро)</button>
-            </div>
-        </main>
-
-        <!-- ЭКРАН 2: УРОКИ СЕТЕЙ -->
-        <main id="networks-screen" class="hidden">
-            <button id="btn-back-networks" class="back-button">← Назад в меню</button>
-            
-            <div class="main-banner">
-                <img src="images/networks-banner.png" alt="Компьютерные сети" style="width: 100%; border-radius: 12px;">
+        <!-- ЭКРАН 1: LINUX-ЗАГРУЗКА (Стартует мгновенно) -->
+        <div id="terminal-screen">
+            <div class="terminal-logs" id="logs-container">
+                <div class="log-line" data-delay="50">[00:00:00.000] >> KERNEL: Booting Linux kernel v6.1.0-systemx64...</div>
+                <div class="log-line" data-delay="150">[00:00:00.012] >> CPU: Core initialization... CPU0 [OK], CPU1 [OK]</div>
+                <div class="log-line" data-delay="250">[00:00:00.045] >> MEM: Physical memory check... 8192MB RAM detect [OK]</div>
+                <div class="log-line" data-delay="300">[00:00:00.080] >> IO: Mounting virtual filesystems (proc, sysfs, devtmpfs)</div>
+                <div class="log-line" data-delay="450">[00:00:00.110] >> INIT: Loading HubNet IT Framework Modules...</div>
+                <div class="log-line" data-delay="600">[00:00:00.180] >> CORE: Decrypting local database structures (AES-256)...</div>
+                <div class="log-line" data-delay="700">[00:00:00.210] >> NET: Initializing Network Stack (IPv4/IPv6)...</div>
+                <div class="log-line" data-delay="850">[00:00:00.290] >> NET: Checking DNS servers [1.1.1.1, 8.8.8.8]... status: ONLINE</div>
+                <div class="log-line" data-delay="950">[00:00:00.350] >> SEC: Establishing secure handshake with auth.hubnet.academy...</div>
+                <div class="log-line" data-delay="1100">[00:00:00.410] >> SEC: SSL/TLS Handshake completed successfully.</div>
+                <div class="log-line" data-delay="1250">[00:00:00.485] >> USER: Certificate validation requested. User: [STUDENT]</div>
+                <div class="log-line" data-delay="1400">[00:00:00.520] >> USER: Handshake confirmed. Access Level: ACADEMY_STUDENT</div>
+                <div class="log-line" data-delay="1550">[00:00:00.600] >> APP: Loading asset packs: 'networking_basics.dat'... [OK]</div>
+                <div class="log-line" data-delay="1650">[00:00:00.670] >> APP: Loading asset packs: 'cyber_security_v2.dat'... [OK]</div>
+                <div class="log-line" data-delay="1750">[00:00:00.710] >> APP: Loading asset packs: 'qa_testing_core.dat'... [OK]</div>
+                <div class="log-line" data-delay="1850">[00:00:00.780] >> APP: Loading asset packs: 'python_scripting.dat'... [OK]</div>
+                <div class="log-line" data-delay="1950">[00:00:00.820] >> APP: Loading asset packs: 'mini_games_bundle.dat'... [OK]</div>
+                <div class="log-line" data-delay="2100">[00:00:00.890] >> PORT: Testing TCP socket loopback... ports 80, 443, 22 [OPEN]</div>
+                <div class="log-line" data-delay="2250">[00:00:00.950] >> MEM: Allocating application sandbox memory... [OK]</div>
+                <div class="log-line" data-delay="2400">[00:00:01.020] >> SYNC: Merging remote cloud progress with local storage...</div>
+                <div class="log-line" data-delay="2550">[00:00:01.110] >> SYNC: Daily streak verified [12 Days]. Bonus XP multiplier active.</div>
+                <div class="log-line" data-delay="2700">[00:00:01.185] >> SYSTEM: Integrity check passed. No anomalies found.</div>
+                <div class="log-line" data-delay="2850">[00:00:01.250] >> BOOT: Launching main application dashboard...</div>
+                <div class="log-line" data-delay="3000">[00:00:01.300] >> READY: Welcome to HubNet IT Academy. Enjoy learning!</div>
             </div>
             
-            <h2 class="block-title">Компьютерные сети "на пальцах"</h2>
-            
-            <div class="lessons-list">
-                <div class="lesson-item">
-                    <p>📚 Урок 1: Что такое IP-адрес?</p>
-                    <span class="xp-badge">⭐ 50 XP</span>
-                    <button class="action-btn">Начать →</button>
-                </div>
-                
-                <div class="lesson-item">
-                    <p>🌐 Урок 2: DNS-серверы</p>
-                    <span class="xp-badge">⭐ 50 XP</span>
-                    <button class="action-btn">Начать →</button>
-                </div>
-                
-                <div class="lesson-item locked">
-                    <p>🔒 Урок 3: Протоколы TCP/IP</p>
-                    <span class="xp-badge">🔒 Требуется 100 XP</span>
-                </div>
-                
-                <div class="lesson-item locked">
-                    <p>🔒 Урок 4: Сетевая безопасность</p>
-                    <span class="xp-badge">🔒 Требуется 200 XP</span>
-                </div>
+            <div class="terminal-footer">
+                <div class="spinner"></div>
+                <div class="status-text">INITIATING USER ACCESS...</div>
             </div>
-        </main>
+        </div>
 
-        <!-- ЭКРАН 3: ПРОФИЛЬ ДЕНИСА -->
-        <main id="profile-screen" class="hidden">
-            <button id="btn-back-profile" class="back-button">← Назад в меню</button>
+        <!-- ЭКРАН 2: ГЛАВНЫЙ ЭКРАН (Появляется после загрузки) -->
+        <main id="main-app">
             
-            <div class="profile-card">
-                <div class="profile-avatar">👤</div>
-                <h2 class="profile-name">Денис</h2>
-                <p class="profile-role">Студент академии</p>
+            <!-- Логотип сверху -->
+            <div class="app-header">
+                <!-- Картинка загружается из твоей папки images -->
+                <img class="app-header-logo" src="images/had-banner.png" alt="HubNet IT Academy" id="app-logo">
+            </div>
+
+            <!-- Выделенная кнопка "Мой профиль" -->
+            <section class="profile-section">
+                <button class="profile-btn" onclick="alert('Переход в профиль')">
+                    👤 Мой профиль
+                </button>
+            </section>
+
+            <!-- Меню разделов -->
+            <div class="menu-list">
                 
-                <div class="stats-container">
-                    <div class="stat-box">
-                        <span class="stat-val">0 / 4</span>
-                        <span class="stat-lbl">Уроков пройдено</span>
+                <div class="menu-item" onclick="alert('Раздел: Компьютерные сети')">
+                    <div class="menu-item-info">
+                        <span class="menu-item-icon">🌐</span>
+                        <span class="menu-item-title">Компьютерные сети</span>
                     </div>
-                    <div class="stat-box">
-                        <span class="stat-val">0</span>
-                        <span class="stat-lbl">Очков XP</span>
-                    </div>
+                    <span class="menu-item-arrow">▶</span>
                 </div>
+
+                <div class="menu-item" onclick="alert('Раздел: Кибербезопасность')">
+                    <div class="menu-item-info">
+                        <span class="menu-item-icon">🛡️</span>
+                        <span class="menu-item-title">Кибербезопасность</span>
+                    </div>
+                    <span class="menu-item-arrow">▶</span>
+                </div>
+
+                <div class="menu-item" onclick="alert('Раздел: QA Тестирование')">
+                    <div class="menu-item-info">
+                        <span class="menu-item-icon">🧪</span>
+                        <span class="menu-item-title">QA тестирование</span>
+                    </div>
+                    <span class="menu-item-arrow">▶</span>
+                </div>
+
+                <div class="menu-item" onclick="alert('Раздел: Python')">
+                    <div class="menu-item-info">
+                        <span class="menu-item-icon">🐍</span>
+                        <span class="menu-item-title">Python</span>
+                    </div>
+                    <span class="menu-item-arrow">▶</span>
+                </div>
+
+                <div class="menu-item" onclick="alert('Раздел: Мини-игры')">
+                    <div class="menu-item-info">
+                        <span class="menu-item-icon">🎮</span>
+                        <span class="menu-item-title">Мини-игры</span>
+                    </div>
+                    <span class="menu-item-arrow">▶</span>
+                </div>
+
             </div>
         </main>
 
     </div>
 
-    <script src="app.js"></script>
+    <script>
+        const terminalScreen = document.getElementById('terminal-screen');
+        const mainApp = document.getElementById('main-app');
+        const logLines = document.querySelectorAll('.log-line');
+        const logsContainer = document.getElementById('logs-container');
+        const appLogo = document.getElementById('app-logo');
+
+        // Резервная отрисовка на случай, если картинка не найдена в images
+        function handleLogoError(imgElement) {
+            const parent = imgElement.parentElement;
+            const placeholder = document.createElement('div');
+            placeholder.className = 'logo-placeholder';
+            placeholder.innerText = 'HubNet IT\nAcademy';
+            parent.replaceChild(placeholder, imgElement);
+        }
+
+        appLogo.onerror = () => handleLogoError(appLogo);
+
+        // СТАРТУЕМ СРАЗУ с анимации терминала
+        window.addEventListener('DOMContentLoaded', () => {
+            startTerminalAnimation();
+        });
+
+        // Симуляция терминала с автоскроллом
+        function startTerminalAnimation() {
+            logLines.forEach((line) => {
+                const delay = parseInt(line.getAttribute('data-delay'));
+                setTimeout(() => {
+                    line.style.display = 'block';
+                    logsContainer.scrollTop = logsContainer.scrollHeight;
+                }, delay);
+            });
+
+            // Переход на главный рабочий экран по окончании логов
+            setTimeout(() => {
+                terminalScreen.style.opacity = '0';
+                setTimeout(() => terminalScreen.style.display = 'none', 500);
+                
+                mainApp.classList.add('active');
+            }, 4200);
+        }
+    </script>
 </body>
 </html>
