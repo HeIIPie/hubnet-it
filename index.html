@@ -4,266 +4,20 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>HubNet IT Academy</title>
-    <!-- Подключаем стильный футуристичный шрифт -->
+    
+    <!-- Подключаем Telegram WebApp API -->
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    
+    <!-- Подключаем шрифты -->
     <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@500;800&family=Share+Tech+Mono&family=Ubuntu:wght@400;500;700&display=swap" rel="stylesheet">
-    <style>
-        /* Базовые стили */
-        * {
-            box-sizing: border-box;
-            margin: 0;
-            padding: 0;
-            -webkit-tap-highlight-color: transparent;
-        }
-
-        body {
-            background-color: #03060f; /* Глубокий темный фон */
-            color: #ffffff;
-            font-family: 'Ubuntu', sans-serif;
-            overflow: hidden;
-            height: 100vh;
-            width: 100vw;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-        }
-
-        /* Ограничиваем область просмотра размерами мобильного телефона */
-        .phone-wrapper {
-            width: 100%;
-            max-width: 420px;
-            height: 100%;
-            max-height: 850px;
-            background: #050914;
-            position: relative;
-            overflow: hidden;
-            box-shadow: 0 0 40px rgba(0, 210, 255, 0.05);
-            display: flex;
-            flex-direction: column;
-        }
-
-        /* На больших экранах добавим аккуратную рамку */
-        @media (min-width: 480px) {
-            .phone-wrapper {
-                height: 92vh;
-                border: 1px solid rgba(0, 210, 255, 0.15);
-                border-radius: 24px;
-            }
-        }
-
-        /* --- ЭКРАН 1: LINUX-ЗАГРУЗКА (Показывается СРАЗУ при старте) --- */
-        #terminal-screen {
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: #000000;
-            color: #39ff14; /* Яркий неоново-зеленый */
-            font-family: 'Share Tech Mono', monospace;
-            padding: 25px 20px;
-            display: flex;
-            flex-direction: column;
-            justify-content: space-between;
-            z-index: 90;
-            transition: opacity 0.5s ease;
-        }
-
-        .terminal-logs {
-            font-size: 11px;
-            line-height: 1.6;
-            flex-grow: 1;
-            overflow-y: auto;
-            padding-right: 10px;
-            scrollbar-width: none; /* Firefox */
-        }
-        .terminal-logs::-webkit-scrollbar {
-            display: none; /* Chrome/Safari */
-        }
-
-        .log-line {
-            display: none;
-            margin-bottom: 8px;
-        }
-
-        .terminal-footer {
-            display: flex;
-            align-items: center;
-            gap: 15px;
-            border-top: 1px solid rgba(57, 255, 20, 0.2);
-            padding-top: 15px;
-            margin-bottom: 10px;
-        }
-
-        .spinner {
-            width: 20px;
-            height: 20px;
-            border: 2px solid rgba(57, 255, 20, 0.2);
-            border-top-color: #39ff14;
-            border-radius: 50%;
-            animation: spin 1s infinite linear;
-        }
-
-        @keyframes spin {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
-        }
-
-        /* --- ЭКРАН 2: ГЛАВНЫЙ ЭКРАН --- */
-        #main-app {
-            height: 100%;
-            width: 100%;
-            display: flex;
-            flex-direction: column;
-            padding: 20px;
-            opacity: 0;
-            transition: opacity 0.8s ease;
-            overflow-y: auto;
-        }
-
-        #main-app.active {
-            opacity: 1;
-        }
-
-        /* Логотип сверху */
-        .app-header {
-            width: 100%;
-            margin-bottom: 15px;
-            display: flex;
-            justify-content: center;
-            min-height: 100px;
-        }
-
-        .app-header-logo {
-            width: 100%;
-            height: auto;
-            border-radius: 12px;
-            box-shadow: 0 0 25px rgba(0, 162, 255, 0.1);
-        }
-
-        /* Заглушка на случай ошибки загрузки картинки */
-        .logo-placeholder {
-            font-family: 'Orbitron', sans-serif;
-            font-size: 24px;
-            font-weight: 800;
-            letter-spacing: 2px;
-            color: #00d2ff;
-            text-shadow: 0 0 10px rgba(0, 210, 255, 0.5);
-            text-align: center;
-            padding: 20px 0;
-            text-transform: uppercase;
-        }
-
-        /* Блок "Мой профиль" со светящимися неоновыми полосами */
-        .profile-section {
-            width: 100%;
-            margin: 10px 0 25px 0;
-            position: relative;
-            padding: 12px 0;
-        }
-
-        .profile-section::before,
-        .profile-section::after {
-            content: '';
-            position: absolute;
-            left: 0;
-            width: 100%;
-            height: 2px;
-            background: linear-gradient(90deg, transparent, #00d2ff, #0066ff, transparent);
-            box-shadow: 0 0 8px #00d2ff, 0 0 15px #0066ff;
-        }
-
-        .profile-section::before { top: 0; }
-        .profile-section::after { bottom: 0; }
-
-        .profile-btn {
-            width: 100%;
-            background: linear-gradient(135deg, rgba(0, 102, 255, 0.08), rgba(0, 210, 255, 0.12));
-            border: 1px solid rgba(0, 210, 255, 0.25);
-            border-radius: 8px;
-            color: #ffffff;
-            font-family: 'Orbitron', sans-serif;
-            font-size: 15px;
-            font-weight: 800;
-            letter-spacing: 2px;
-            padding: 14px;
-            text-transform: uppercase;
-            cursor: pointer;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            gap: 12px;
-            transition: all 0.25s ease;
-        }
-
-        .profile-btn:active {
-            background: linear-gradient(135deg, rgba(0, 102, 255, 0.2), rgba(0, 210, 255, 0.3));
-            box-shadow: inset 0 0 10px rgba(0, 210, 255, 0.4);
-            transform: scale(0.98);
-        }
-
-        /* Список разделов (кнопки) */
-        .menu-list {
-            display: flex;
-            flex-direction: column;
-            gap: 12px;
-            flex-grow: 1;
-        }
-
-        .menu-item {
-            background: #090f20;
-            border: 1px solid rgba(255, 255, 255, 0.03);
-            border-radius: 10px;
-            padding: 16px 20px;
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            cursor: pointer;
-            transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
-        }
-
-        .menu-item:active {
-            background: #111b34;
-            border-color: rgba(0, 210, 255, 0.3);
-            transform: scale(0.98);
-        }
-
-        .menu-item-info {
-            display: flex;
-            align-items: center;
-            gap: 15px;
-        }
-
-        .menu-item-icon {
-            font-size: 20px;
-            width: 28px;
-            display: flex;
-            justify-content: center;
-        }
-
-        .menu-item-title {
-            font-size: 14px;
-            font-weight: 500;
-            letter-spacing: 0.5px;
-            color: rgba(255, 255, 255, 0.95);
-        }
-
-        .menu-item-arrow {
-            color: rgba(0, 210, 255, 0.3);
-            font-size: 12px;
-            transition: transform 0.2s;
-        }
-
-        .menu-item:active .menu-item-arrow {
-            transform: translateX(3px);
-            color: #00d2ff;
-        }
-    </style>
+    
+    <link rel="stylesheet" href="style.css">
 </head>
 <body>
 
     <div class="phone-wrapper">
 
-        <!-- ЭКРАН 1: LINUX-ЗАГРУЗКА (Стартует мгновенно) -->
+        <!-- ЭКРАН 1: LINUX-ЗАГРУЗКА -->
         <div id="terminal-screen">
             <div class="terminal-logs" id="logs-container">
                 <div class="log-line" data-delay="50">[00:00:00.000] >> KERNEL: Booting Linux kernel v6.1.0-systemx64...</div>
@@ -298,26 +52,20 @@
             </div>
         </div>
 
-        <!-- ЭКРАН 2: ГЛАВНЫЙ ЭКРАН (Появляется после загрузки) -->
+        <!-- ЭКРАН 2: ГЛАВНЫЙ ЭКРАН -->
         <main id="main-app">
-            
-            <!-- Логотип сверху -->
             <div class="app-header">
-                <!-- Картинка загружается из твоей папки images -->
                 <img class="app-header-logo" src="images/had-banner.png" alt="HubNet IT Academy" id="app-logo">
             </div>
 
-            <!-- Выделенная кнопка "Мой профиль" -->
             <section class="profile-section">
-                <button class="profile-btn" onclick="alert('Переход в профиль')">
+                <button class="profile-btn" id="btn-profile">
                     👤 Мой профиль
                 </button>
             </section>
 
-            <!-- Меню разделов -->
             <div class="menu-list">
-                
-                <div class="menu-item" onclick="alert('Раздел: Компьютерные сети')">
+                <div class="menu-item" data-target="networks">
                     <div class="menu-item-info">
                         <span class="menu-item-icon">🌐</span>
                         <span class="menu-item-title">Компьютерные сети</span>
@@ -325,7 +73,7 @@
                     <span class="menu-item-arrow">▶</span>
                 </div>
 
-                <div class="menu-item" onclick="alert('Раздел: Кибербезопасность')">
+                <div class="menu-item" data-target="security">
                     <div class="menu-item-info">
                         <span class="menu-item-icon">🛡️</span>
                         <span class="menu-item-title">Кибербезопасность</span>
@@ -333,7 +81,7 @@
                     <span class="menu-item-arrow">▶</span>
                 </div>
 
-                <div class="menu-item" onclick="alert('Раздел: QA Тестирование')">
+                <div class="menu-item" data-target="qa">
                     <div class="menu-item-info">
                         <span class="menu-item-icon">🧪</span>
                         <span class="menu-item-title">QA тестирование</span>
@@ -341,7 +89,7 @@
                     <span class="menu-item-arrow">▶</span>
                 </div>
 
-                <div class="menu-item" onclick="alert('Раздел: Python')">
+                <div class="menu-item" data-target="python">
                     <div class="menu-item-info">
                         <span class="menu-item-icon">🐍</span>
                         <span class="menu-item-title">Python</span>
@@ -349,60 +97,51 @@
                     <span class="menu-item-arrow">▶</span>
                 </div>
 
-                <div class="menu-item" onclick="alert('Раздел: Мини-игры')">
+                <div class="menu-item" data-target="games">
                     <div class="menu-item-info">
                         <span class="menu-item-icon">🎮</span>
                         <span class="menu-item-title">Мини-игры</span>
                     </div>
                     <span class="menu-item-arrow">▶</span>
                 </div>
-
             </div>
         </main>
 
+        <!-- ЭКРАН 3: ИГРА ТРИ В РЯД (Скрыт по умолчанию) -->
+        <div id="game-screen" class="hidden">
+            <div class="game-header">
+                <button class="back-btn" id="btn-back">← Меню</button>
+                
+                <!-- Новая статусная панель с бегущей строкой и квизом -->
+                <div id="status-panel">
+                    <!-- Бегущая строка -->
+                    <div id="marquee" class="marquee">
+                        <span>// STATUS: MONITORING NET CHANNELS... LISTENING PORT 25... SYSTEM ACTIVE...</span>
+                    </div>
+                    
+                    <!-- Окно вопроса (скрыто на старте) -->
+                    <div id="quiz-container" class="hidden">
+                        <div id="question-text">Вопрос грузится...</div>
+                        <div id="answers-grid"></div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="game-info-wrapper">
+                <div class="game-info-text" id="game-tip">Собирай фишки, чтобы открыть вопрос (0/5)</div>
+                <div class="combo-indicator" id="combo-alert"></div>
+            </div>
+
+            <!-- Шкала прогресса -->
+            <div class="progress-bar-container">
+                <div id="progress-bar" style="width: 0%;"></div>
+            </div>
+            
+            <div id="game-board"></div>
+        </div>
+
     </div>
 
-    <script>
-        const terminalScreen = document.getElementById('terminal-screen');
-        const mainApp = document.getElementById('main-app');
-        const logLines = document.querySelectorAll('.log-line');
-        const logsContainer = document.getElementById('logs-container');
-        const appLogo = document.getElementById('app-logo');
-
-        // Резервная отрисовка на случай, если картинка не найдена в images
-        function handleLogoError(imgElement) {
-            const parent = imgElement.parentElement;
-            const placeholder = document.createElement('div');
-            placeholder.className = 'logo-placeholder';
-            placeholder.innerText = 'HubNet IT\nAcademy';
-            parent.replaceChild(placeholder, imgElement);
-        }
-
-        appLogo.onerror = () => handleLogoError(appLogo);
-
-        // СТАРТУЕМ СРАЗУ с анимации терминала
-        window.addEventListener('DOMContentLoaded', () => {
-            startTerminalAnimation();
-        });
-
-        // Симуляция терминала с автоскроллом
-        function startTerminalAnimation() {
-            logLines.forEach((line) => {
-                const delay = parseInt(line.getAttribute('data-delay'));
-                setTimeout(() => {
-                    line.style.display = 'block';
-                    logsContainer.scrollTop = logsContainer.scrollHeight;
-                }, delay);
-            });
-
-            // Переход на главный рабочий экран по окончании логов
-            setTimeout(() => {
-                terminalScreen.style.opacity = '0';
-                setTimeout(() => terminalScreen.style.display = 'none', 500);
-                
-                mainApp.classList.add('active');
-            }, 4200);
-        }
-    </script>
+    <script src="app.js"></script>
 </body>
 </html>
