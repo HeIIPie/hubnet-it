@@ -1,4 +1,4 @@
-/* Базовые стили */
+ /* Базовые стили */
 * {
     box-sizing: border-box;
     margin: 0;
@@ -227,7 +227,7 @@ body {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    margin-bottom: 15px;
+    margin-bottom: 12px;
     gap: 10px;
 }
 
@@ -246,18 +246,18 @@ body {
 }
 .back-btn:active { background: rgba(0, 210, 255, 0.25); }
 
-/* Двухрежимная панель (бегущая строка / квиз) */
+/* Адаптивная статус-панель без жестких лимитов по высоте */
 #status-panel {
     flex-grow: 1;
     background: rgba(9, 15, 32, 0.95);
     border: 1px solid rgba(0, 210, 255, 0.2);
     border-radius: 12px;
-    height: 65px;
-    overflow: hidden;
+    min-height: 105px;
+    height: auto;
     display: flex;
     align-items: center;
     position: relative;
-    padding: 6px 12px;
+    padding: 10px 12px;
 }
 
 /* Бегущая строка */
@@ -275,31 +275,25 @@ body {
     animation: scroll-text 15s linear infinite;
 }
 @keyframes scroll-text {
-    0%   { transform: translate(3d, 0, 0); }
+    0%   { transform: translate3d(0, 0, 0); }
     100% { transform: translate3d(-100%, 0, 0); }
 }
 
-/* Стили блока Квиза */
+/* Окно вопросов и ответов */
 #quiz-container {
     width: 100%;
-    height: 100%;
     display: flex;
     flex-direction: column;
-    justify-content: space-between;
+    gap: 8px;
 }
 
 #question-text {
     font-size: 11px;
     font-weight: 700;
     color: #ffffff;
-    line-height: 1.2;
+    line-height: 1.3;
     text-align: center;
-    margin-bottom: 4px;
-    display: -webkit-box;
-    -webkit-line-clamp: 2;
-    line-clamp: 2;
-    -webkit-box-orient: vertical;
-    overflow: hidden;
+    word-wrap: break-word;
 }
 
 #answers-grid {
@@ -316,7 +310,7 @@ body {
     font-weight: bold;
     font-family: 'Orbitron', sans-serif;
     border-radius: 6px;
-    padding: 6px 2px;
+    padding: 8px 2px;
     cursor: pointer;
     text-align: center;
     transition: all 0.15s ease;
@@ -325,6 +319,44 @@ body {
     background: #00d2ff;
     color: #03060f;
     box-shadow: 0 0 10px #00d2ff;
+}
+
+/* Контроллеры игры (Кнопка перемешивания) */
+.game-controls {
+    display: flex;
+    justify-content: center;
+    margin-bottom: 10px;
+    width: 100%;
+}
+
+.control-btn {
+    width: 100%;
+    background: rgba(0, 210, 255, 0.05);
+    border: 1px solid rgba(0, 210, 255, 0.3);
+    color: #00d2ff;
+    font-family: 'Ubuntu', sans-serif;
+    font-size: 12px;
+    font-weight: 500;
+    padding: 10px;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+}
+
+.control-btn:active {
+    background: rgba(0, 210, 255, 0.2);
+    box-shadow: 0 0 10px rgba(0, 210, 255, 0.4);
+    transform: scale(0.98);
+}
+
+.control-btn:disabled {
+    opacity: 0.3;
+    cursor: not-allowed;
+    box-shadow: none;
 }
 
 /* Информационная строка под шапкой */
@@ -351,7 +383,7 @@ body {
     height: 15px;
 }
 
-/* Полоса прогресса и таймера */
+/* Полоса прогресса */
 .progress-bar-container {
     width: 100%;
     height: 8px;
@@ -364,13 +396,12 @@ body {
 
 #progress-bar {
     height: 100%;
-    background: #39ff14; /* Зеленый на зарядке */
+    background: #39ff14;
     width: 0%;
-    transition: width 0.25s ease, background-color 0.3s ease;
+    transition: width 0.1s linear, background-color 0.3s ease;
     box-shadow: 0 0 10px rgba(57, 255, 20, 0.5);
 }
 
-/* Красный таймер при активном вопросе */
 #progress-bar.timer-mode {
     background: #ff0055;
     box-shadow: 0 0 12px #ff0055;
@@ -390,6 +421,14 @@ body {
     box-shadow: 0 0 25px rgba(0, 0, 0, 0.5);
 }
 
+#game-board.board-locked .tile {
+    cursor: default;
+    opacity: 0.5;
+}
+#game-board.board-locked .tile:active {
+    transform: none;
+}
+
 /* Плитки */
 .tile {
     background: #090f20;
@@ -401,18 +440,9 @@ body {
     font-size: 26px;
     cursor: pointer;
     user-select: none;
-    transition: transform 0.15s ease, background 0.15s ease;
+    transition: transform 0.15s ease, background 0.15s ease, opacity 0.2s ease;
 }
 .tile:active { transform: scale(0.9); }
-
-/* Блокировка доски, когда активен квиз */
-#game-board.board-locked .tile {
-    cursor: default;
-    opacity: 0.5;
-}
-#game-board.board-locked .tile:active {
-    transform: none;
-}
 
 .tile.selected {
     border: 2px solid #00d2ff;

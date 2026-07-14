@@ -68,7 +68,7 @@ document.querySelectorAll('.menu-item').forEach(item => {
 // 2. ДВИЖОК ИГРЫ "ТРИ В РЯД + ИНТЕРАКТИВНЫЙ КВИЗ"
 // ==========================================
 
-// Тематические вопросы по SMTP / POP3 / IMAP (всего 5 штук)
+// Тематические вопросы по SMTP / POP3 / IMAP
 const questions = [
     {
         q: "Какой порт по умолчанию используется для незащищенного соединения SMTP?",
@@ -97,18 +97,18 @@ const questions = [
     }
 ];
 
-const icons = ['🌐', '🛡️', '🧪', '🐍', '🎮', '💻', '⚡'];
-const boardSize = 6; // Сетка 6х6
+// 7 сетевых иконок (без змейки и замков)
+const icons = ['🌐', '💻', '🔌', '📡', '✉️', '⚡', '☁️'];
+const boardSize = 6; 
 let board = [];
-let progress = 0; // Накопление шкалы (0 - 100)
+let progress = 0; 
 let combo = 0;
 let selectedIndex = null;
-let isAnimating = false; // Блокирует ходы во время анимации обрушения фишек
-let isQuizActive = false; // Блокирует доску во время вопроса
+let isAnimating = false; // Блокировка действий при расчете поля
+let isQuizActive = false; // Активен ли вопрос
 
-let currentQuestionIndex = 0; // Индекс текущего вопроса (0-4)
-let timerInterval = null; // Для тающей шкалы-таймера
-let timeLeft = 100; // Процент оставшегося времени на вопрос
+let currentQuestionIndex = 0; 
+let gameLoopInterval = null; 
 
 // Элементы игры
 const gameScreen = document.getElementById('game-screen');
@@ -116,6 +116,7 @@ const gameBoard = document.getElementById('game-board');
 const comboAlert = document.getElementById('combo-alert');
 const progressBar = document.getElementById('progress-bar');
 const gameTip = document.getElementById('game-tip');
+const btnShuffle = document.getElementById('btn-shuffle');
 
 const statusPanel = document.getElementById('status-panel');
 const marquee = document.getElementById('marquee');
@@ -132,9 +133,21 @@ document.querySelector('[data-target="networks"]').addEventListener('click', () 
 
 // Выход из игры
 document.getElementById('btn-back').addEventListener('click', () => {
-    clearInterval(timerInterval);
+    stopGameLoop();
+    
+    // Чистим хвосты перед выходом
+    gameBoard.classList.remove('board-locked');
+    progressBar.classList.remove('timer-mode');
+    closeQuizUI();
+    
     gameScreen.classList.add('hidden');
     mainApp.style.display = 'flex';
+});
+
+// Событие кнопки перемешивания
+btnShuffle.addEventListener('click', () => {
+    if (isAnimating || isQuizActive) return; 
+    shuffleBoard();
 });
 
 function startGame() {
@@ -144,11 +157,50 @@ function startGame() {
     isAnimating = false;
     isQuizActive = false;
     selectedIndex = null;
-    clearInterval(timerInterval);
     
-    updateProgressUI();
+    // 1. Гарантированно убираем красный цвет со шкалы
+    progressBar.classList.remove('timer-mode'); 
+    progressBar.style.width = '0%';
+
+    // 2. Снимаем блокировку и тусклость с игрового поля
+    gameBoard.classList.remove('board-locked');
+
+    // 3. Сбрасываем интерфейс квиза на случайный запуск
     closeQuizUI();
+
+    btnShuffle.disabled = false;
+    updateProgressUI();
     createValidBoard();
+    startGameLoop(); 
+}
+
+// Постоянный фоновый цикл убывания шкалы (идеальный баланс х2)
+function startGameLoop() {
+    stopGameLoop();
+    gameLoopInterval = setInterval(() => {
+        if (isQuizActive) {
+            // ФАЗА КВИЗА: ровно в 2 раза быстрее обычной игры — 3% в секунду (0.3% каждые 100мс)
+            progress = Math.max(0, progress - 0.3); 
+            updateProgressUI();
+
+            if (progress <= 0) {
+                onQuizTimeout();
+            }
+        } else {
+            // ФАЗА ИГРЫ: шкала плавно убывает со скоростью 1.5% в секунду (0.15% каждые 100мс)
+            if (progress > 0 && !isAnimating) {
+                progress = Math.max(0, progress - 0.15);
+                updateProgressUI();
+            }
+        }
+    }, 100);
+}
+
+function stopGameLoop() {
+    if (gameLoopInterval) {
+        clearInterval(gameLoopInterval);
+        gameLoopInterval = null;
+    }
 }
 
 // Создаем игровое поле без готовых совпадений на старте
@@ -178,7 +230,7 @@ function renderBoard() {
 
 // Клик по фишке
 function onTileClick(index) {
-    if (isAnimating || isQuizActive) return; // Игнорируем клики, если идет расчет поля или открыт вопрос
+    if (isAnimating || isQuizActive) return; 
 
     if (selectedIndex === null) {
         selectedIndex = index;
@@ -266,7 +318,6 @@ function hasMatches() {
 }
 
 function processMatches(matchedIndices) {
-    // Каждая исчезнувшая плитка дает +5% к прогрессу. Комбо дает множитель!
     const progressGained = matchedIndices.length * 4 * combo;
     progress = Math.min(100, progress + progressGained);
     updateProgressUI();
@@ -295,7 +346,7 @@ function processMatches(matchedIndices) {
                 comboAlert.innerText = '';
                 isAnimating = false;
                 
-                // Проверяем: если шкала достигла 100%, запускаем Квиз!
+                // Набрали 100% -> запускаем Вопрос!
                 if (progress >= 100) {
                     launchQuiz();
                 }
@@ -324,29 +375,74 @@ function dropTiles() {
     }
 }
 
-// Обновление шкалы
+// Перемешивание поля (честное, без халявных очков)
+function shuffleBoard() {
+    isAnimating = true;
+    btnShuffle.disabled = true;
+
+    // Плитки красиво сжимаются в центр
+    Array.from(gameBoard.children).forEach(tile => {
+        tile.style.transform = 'scale(0)';
+        tile.style.opacity = '0';
+    });
+
+    setTimeout(() => {
+        do {
+            for (let i = board.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                const temp = board[i];
+                board[i] = board[j];
+                board[j] = temp;
+            }
+        } while (hasMatches().length > 0);
+
+        renderBoard();
+        
+        // Плавное поочередное раскрытие фишек волной
+        Array.from(gameBoard.children).forEach((tile, idx) => {
+            tile.style.transform = 'scale(0)';
+            tile.style.opacity = '0';
+            setTimeout(() => {
+                tile.style.transform = 'scale(1)';
+                tile.style.opacity = '1';
+            }, idx * 12); 
+        });
+
+        setTimeout(() => {
+            isAnimating = false;
+            btnShuffle.disabled = false;
+        }, 500);
+
+    }, 250);
+}
+
+// Универсальное обновление UI шкалы
 function updateProgressUI() {
     progressBar.style.width = `${progress}%`;
-    gameTip.innerText = `Вопрос: ${currentQuestionIndex + 1}/5 | Зарядка: ${Math.floor(progress)}%`;
+    
+    if (isQuizActive) {
+        gameTip.innerText = `ВНИМАНИЕ: ОТВЕТЬ БЫСТРЕЕ, ЧТОБЫ СОХРАНИТЬ ЗАРЯД!`;
+    } else {
+        gameTip.innerText = `Вопрос: ${currentQuestionIndex + 1}/5 | Зарядка: ${Math.floor(progress)}%`;
+    }
 }
 
 // ==========================================
-// 3. ИНТЕРАКТИВНЫЙ КВИЗ (ОБРАБОТКА ФАЗЫ ВОПРОСА)
+// 3. ИНТЕРАКТИВНЫЙ КВИЗ
 // ==========================================
 
 function launchQuiz() {
     isQuizActive = true;
-    gameBoard.classList.add('board-locked'); // Визуально глушим игровое поле
+    gameBoard.classList.add('board-locked'); 
+    btnShuffle.disabled = true; // Отключаем перемешивание во время квиза
     
-    // Переключаем интерфейс верхней панели
     marquee.classList.add('hidden');
     quizContainer.classList.remove('hidden');
 
-    // Берем текущий вопрос
     const currentQuestion = questions[currentQuestionIndex];
     questionText.innerText = currentQuestion.q;
 
-    // Генерируем кнопки ответов
+    // Генерируем ответы
     answersGrid.innerHTML = '';
     currentQuestion.a.forEach((ansText, index) => {
         const btn = document.createElement('button');
@@ -356,49 +452,29 @@ function launchQuiz() {
         answersGrid.appendChild(btn);
     });
 
-    // Настраиваем шкалу как тающий таймер
-    progressBar.classList.add('timer-mode');
-    timeLeft = 100;
-    progressBar.style.width = '100%';
-    gameTip.innerText = `ВНИМАНИЕ: СИСТЕМА ЗАПРАШИВАЕТ ОТВЕТ!`;
-
-    // Запускаем таймер: 10 секунд на размышление (минус 10% каждую секунду)
-    clearInterval(timerInterval);
-    timerInterval = setInterval(() => {
-        timeLeft -= 10; // Шкала упадет до нуля за 10 секунд
-        progressBar.style.width = `${timeLeft}%`;
-
-        if (timeLeft <= 0) {
-            clearInterval(timerInterval);
-            onQuizTimeout();
-        }
-    }, 1000);
+    progressBar.classList.add('timer-mode'); // Покраснение шкалы-таймера
 }
 
-// Игрок выбрал вариант ответа
+// Обработка выбора ответа
 function selectAnswer(selectedIndex) {
-    clearInterval(timerInterval);
     const currentQuestion = questions[currentQuestionIndex];
 
     if (selectedIndex === currentQuestion.correct) {
-        // ПРАВИЛЬНЫЙ ОТВЕТ!
-        alert("✔️ Верно! Доступ разрешен.");
+        alert("✔️ Верно! Отличная скорость.");
         currentQuestionIndex++;
-        progress = 0; // Сбрасываем шкалу для зарядки к следующему вопросу
         
         if (currentQuestionIndex >= questions.length) {
-            // ИГРА ПОЛНОСТЬЮ ПРОЙДЕНА
             setTimeout(() => {
-                alert("🏆 Поздравляем! Ты успешно ответил на все 5 вопросов по протоколам сетей! Возвращаемся в меню.");
+                alert("🏆 Поздравляем! Лекция по протоколам пройдена на 100%!");
                 gameScreen.classList.add('hidden');
                 mainApp.style.display = 'flex';
+                stopGameLoop();
             }, 600);
         } else {
-            // Переход к следующему витку игры
-            resumeMainGameplay();
+            // Сохраняем нерастраченный за секунды остаток шкалы!
+            resumeMainGameplay(false); 
         }
     } else {
-        // НЕПРАВИЛЬНЫЙ ОТВЕТ
         alert("❌ Ошибка! Неверный порт или протокол.");
         penalizePlayer();
     }
@@ -406,25 +482,27 @@ function selectAnswer(selectedIndex) {
 
 // Время вышло
 function onQuizTimeout() {
-    alert("⏰ Время вышло! Сессия заблокирована.");
+    alert("⏰ Время вышло! Заряд полностью исчерпан.");
     penalizePlayer();
 }
 
 // Штраф за ошибку или таймаут
 function penalizePlayer() {
-    // Отбрасываем шкалу прогресса на 40%, чтобы игроку пришлось набрать еще немного фишек для повторной попытки
-    progress = 40; 
-    resumeMainGameplay();
+    progress = 30; // Откат на 30% при неудаче
+    resumeMainGameplay(true);
 }
 
-// Возврат к стандартной игре "Три в ряд"
-function resumeMainGameplay() {
+// Возврат к игре "Три в ряд"
+function resumeMainGameplay(wasError) {
     isQuizActive = false;
     gameBoard.classList.remove('board-locked');
-    
-    // Снимаем красный режим таймера со шкалы
     progressBar.classList.remove('timer-mode');
+    btnShuffle.disabled = false;
     
+    if (!wasError && progress >= 100) {
+        progress = 90; // Защитная срезка, чтобы игра не зациклилась
+    }
+
     closeQuizUI();
     updateProgressUI();
 }

@@ -107,12 +107,12 @@
             </div>
         </main>
 
-        <!-- ЭКРАН 3: ИГРА ТРИ В РЯД (Скрыт по умолчанию) -->
+        <!-- ЭКРАН 3: ИГРА ТРИ В РЯД -->
         <div id="game-screen" class="hidden">
             <div class="game-header">
                 <button class="back-btn" id="btn-back">← Меню</button>
                 
-                <!-- Новая статусная панель с бегущей строкой и квизом -->
+                <!-- Адаптивная статусная панель -->
                 <div id="status-panel">
                     <!-- Бегущая строка -->
                     <div id="marquee" class="marquee">
@@ -128,13 +128,18 @@
             </div>
             
             <div class="game-info-wrapper">
-                <div class="game-info-text" id="game-tip">Собирай фишки, чтобы открыть вопрос (0/5)</div>
+                <div class="game-info-text" id="game-tip">Вопрос: 1/5 | Зарядка: 0%</div>
                 <div class="combo-indicator" id="combo-alert"></div>
             </div>
 
             <!-- Шкала прогресса -->
             <div class="progress-bar-container">
                 <div id="progress-bar" style="width: 0%;"></div>
+            </div>
+
+            <!-- Управление игровым полем (Перемешивание) -->
+            <div class="game-controls">
+                <button id="btn-shuffle" class="control-btn">🔄 Перемешать поле</button>
             </div>
             
             <div id="game-board"></div>
