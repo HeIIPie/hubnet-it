@@ -2,181 +2,97 @@
 <html lang="ru">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>HubNet IT Academy</title>
-    
-    <!-- Подключаем Telegram WebApp API -->
-    <script src="https://telegram.org/js/telegram-web-app.js"></script>
-    
-    <!-- Подключаем шрифты -->
-    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@500;800&family=Share+Tech+Mono&family=Ubuntu:wght@400;500;700&display=swap" rel="stylesheet">
-    
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Hubnet IT — Обучающая игра</title>
     <link rel="stylesheet" href="style.css">
+    <!-- Telegram Web App API -->
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
 </head>
 <body>
 
-    <div class="phone-wrapper">
+    <!-- ЭКРАН 1: ГЛАВНОЕ МЕНЮ -->
+    <div id="main-app" class="container">
+        <div class="logo-container">
+            <img src="images/had-banner.png" alt="Hubnet Logo" class="main-logo">
+        </div>
+        
+        <h1 class="main-title">Hubnet IT</h1>
+        <p class="main-subtitle">Изучай технологии, играя в "Три в ряд"!</p>
+        
+        <div class="menu-buttons">
+            <button id="btn-computer-networks" class="btn-menu">🔌 Компьютерные сети</button>
+            <button id="btn-quizzes" class="btn-menu locked-menu" disabled>📝 Квизы (Скоро)</button>
+            <button id="btn-coming-soon" class="btn-menu locked-menu" disabled>🔒 Базы данных (Скоро)</button>
+        </div>
+    </div>
 
-        <!-- ЭКРАН 1: LINUX-ЗАГРУЗКА -->
-        <div id="terminal-screen">
-            <div class="terminal-logs" id="logs-container">
-                <div class="log-line" data-delay="50">[00:00:00.000] >> KERNEL: Booting Linux kernel v6.1.0-systemx64...</div>
-                <div class="log-line" data-delay="150">[00:00:00.012] >> CPU: Core initialization... CPU0 [OK], CPU1 [OK]</div>
-                <div class="log-line" data-delay="250">[00:00:00.045] >> MEM: Physical memory check... 8192MB RAM detect [OK]</div>
-                <div class="log-line" data-delay="300">[00:00:00.080] >> IO: Mounting virtual filesystems (proc, sysfs, devtmpfs)</div>
-                <div class="log-line" data-delay="450">[00:00:00.110] >> INIT: Loading HubNet IT Framework Modules...</div>
-                <div class="log-line" data-delay="600">[00:00:00.180] >> CORE: Decrypting local database structures (AES-256)...</div>
-                <div class="log-line" data-delay="700">[00:00:00.210] >> NET: Initializing Network Stack (IPv4/IPv6)...</div>
-                <div class="log-line" data-delay="850">[00:00:00.290] >> NET: Checking DNS servers [1.1.1.1, 8.8.8.8]... status: ONLINE</div>
-                <div class="log-line" data-delay="950">[00:00:00.350] >> SEC: Establishing secure handshake with auth.hubnet.academy...</div>
-                <div class="log-line" data-delay="1100">[00:00:00.410] >> SEC: SSL/TLS Handshake completed successfully.</div>
-                <div class="log-line" data-delay="1250">[00:00:00.485] >> USER: Certificate validation requested. User: [STUDENT]</div>
-                <div class="log-line" data-delay="1400">[00:00:00.520] >> USER: Handshake confirmed. Access Level: ACADEMY_STUDENT</div>
-                <div class="log-line" data-delay="1550">[00:00:00.600] >> APP: Loading asset packs: 'networking_basics.dat'... [OK]</div>
-                <div class="log-line" data-delay="1650">[00:00:00.670] >> APP: Loading asset packs: 'cyber_security_v2.dat'... [OK]</div>
-                <div class="log-line" data-delay="1750">[00:00:00.710] >> APP: Loading asset packs: 'qa_testing_core.dat'... [OK]</div>
-                <div class="log-line" data-delay="1850">[00:00:00.780] >> APP: Loading asset packs: 'python_scripting.dat'... [OK]</div>
-                <div class="log-line" data-delay="1950">[00:00:00.820] >> APP: Loading asset packs: 'mini_games_bundle.dat'... [OK]</div>
-                <div class="log-line" data-delay="2100">[00:00:00.890] >> PORT: Testing TCP socket loopback... ports 80, 443, 22 [OPEN]</div>
-                <div class="log-line" data-delay="2250">[00:00:00.950] >> MEM: Allocating application sandbox memory... [OK]</div>
-                <div class="log-line" data-delay="2400">[00:00:01.020] >> SYNC: Merging remote cloud progress with local storage...</div>
-                <div class="log-line" data-delay="2550">[00:00:01.110] >> SYNC: Daily streak verified [12 Days]. Bonus XP multiplier active.</div>
-                <div class="log-line" data-delay="2700">[00:00:01.185] >> SYSTEM: Integrity check passed. No anomalies found.</div>
-                <div class="log-line" data-delay="2850">[00:00:01.250] >> BOOT: Launching main application dashboard...</div>
-                <div class="log-line" data-delay="3000">[00:00:01.300] >> READY: Welcome to HubNet IT Academy. Enjoy learning!</div>
+    <!-- ЭКРАН 2: ВЫБОР УРОКОВ -->
+    <div id="lessons-screen" class="hidden container">
+        <div class="header">
+            <button id="btn-lessons-back" class="btn-back">← Меню</button>
+            <h2>Компьютерные сети</h2>
+        </div>
+        
+        <div class="lessons-list" id="lessons-list">
+            <!-- Карточки уроков сгенерируются из js/ui.js -->
+        </div>
+    </div>
+
+    <!-- ЭКРАН 3: МИНИ-ЛЕКЦИЯ -->
+    <div id="lecture-screen" class="hidden container">
+        <div class="header">
+            <button id="btn-lecture-back" class="btn-back">← Уроки</button>
+            <h2 id="lecture-title">Загрузка...</h2>
+        </div>
+        
+        <div class="lecture-content-wrapper">
+            <div class="lecture-text" id="lecture-text">
+                <!-- Текст лекции подставится из js/data/lessons.js -->
             </div>
-            
-            <div class="terminal-footer">
-                <div class="spinner"></div>
-                <div class="status-text">INITIATING USER ACCESS...</div>
+        </div>
+        
+        <div class="lecture-footer">
+            <button id="btn-start-practice" class="btn-action">Начать практику 🎮</button>
+        </div>
+    </div>
+
+    <!-- ЭКРАН 4: ИГРОВОЕ ПОЛЕ -->
+    <div id="game-screen" class="hidden container">
+        <div class="header">
+            <button id="btn-back" class="btn-back">← Выход</button>
+            <div class="score-container">
+                <button id="btn-shuffle" class="btn-shuffle">🔄 Смешать</button>
             </div>
         </div>
 
-        <!-- ЭКРАН 2: ГЛАВНЫЙ ЭКРАН -->
-        <main id="main-app">
-            <div class="app-header">
-                <img class="app-header-logo" src="images/had-banner.png" alt="HubNet IT Academy" id="app-logo">
+        <!-- Шкала прогресса (в игре) / Таймер (в квизе) -->
+        <div class="progress-container">
+            <div class="progress-bar-wrapper">
+                <div id="progress-bar" class="progress-bar"></div>
             </div>
-
-            <section class="profile-section">
-                <button class="profile-btn" id="btn-profile">
-                    👤 Мой профиль
-                </button>
-            </section>
-
-            <div class="menu-list">
-                <div class="menu-item" data-target="networks">
-                    <div class="menu-item-info">
-                        <span class="menu-item-icon">🌐</span>
-                        <span class="menu-item-title">Компьютерные сети</span>
-                    </div>
-                    <span class="menu-item-arrow">▶</span>
-                </div>
-
-                <div class="menu-item" data-target="security">
-                    <div class="menu-item-info">
-                        <span class="menu-item-icon">🛡️</span>
-                        <span class="menu-item-title">Кибербезопасность</span>
-                    </div>
-                    <span class="menu-item-arrow">▶</span>
-                </div>
-
-                <div class="menu-item" data-target="qa">
-                    <div class="menu-item-info">
-                        <span class="menu-item-icon">🧪</span>
-                        <span class="menu-item-title">QA тестирование</span>
-                    </div>
-                    <span class="menu-item-arrow">▶</span>
-                </div>
-
-                <div class="menu-item" data-target="python">
-                    <div class="menu-item-info">
-                        <span class="menu-item-icon">🐍</span>
-                        <span class="menu-item-title">Python</span>
-                    </div>
-                    <span class="menu-item-arrow">▶</span>
-                </div>
-
-                <div class="menu-item" data-target="games">
-                    <div class="menu-item-info">
-                        <span class="menu-item-icon">🎮</span>
-                        <span class="menu-item-title">Мини-игры</span>
-                    </div>
-                    <span class="menu-item-arrow">▶</span>
-                </div>
-            </div>
-        </main>
-        <!-- ЭКРАН ВЫБОРА УРОКОВ -->
-<div id="lessons-screen" class="hidden container">
-    <div class="header">
-        <button id="btn-lessons-back" class="btn-back">← Меню</button>
-        <h2>Компьютерные сети</h2>
-    </div>
-    
-    <div class="lessons-list" id="lessons-list">
-        <!-- Карточки уроков будут генерироваться динамически из JS -->
-    </div>
-</div>
-
-<!-- ЭКРАН МИНИ-ЛЕКЦИИ -->
-<div id="lecture-screen" class="hidden container">
-    <div class="header">
-        <button id="btn-lecture-back" class="btn-back">← Уроки</button>
-        <h2 id="lecture-title">Урок 1</h2>
-    </div>
-    
-    <div class="lecture-content-wrapper">
-        <div class="lecture-text" id="lecture-text">
-            <!-- Сюда будет подставляться текст лекции из lessons.js -->
-        </div>
-    </div>
-    
-    <div class="lecture-footer">
-        <button id="btn-start-practice" class="btn-action">Начать практику 🎮</button>
-    </div>
-</div>
-
-
-        <!-- ЭКРАН 3: ИГРА ТРИ В РЯД -->
-        <div id="game-screen" class="hidden">
-            <div class="game-header">
-                <button class="back-btn" id="btn-back">← Меню</button>
-                
-                <!-- Адаптивная статусная панель -->
-                <div id="status-panel">
-                    <!-- Бегущая строка -->
-                    <div id="marquee" class="marquee">
-                        <span>// STATUS: MONITORING NET CHANNELS... LISTENING PORT 25... SYSTEM ACTIVE...</span>
-                    </div>
-                    
-                    <!-- Окно вопроса (скрыто на старте) -->
-                    <div id="quiz-container" class="hidden">
-                        <div id="question-text">Вопрос грузится...</div>
-                        <div id="answers-grid"></div>
-                    </div>
-                </div>
-            </div>
-            
-            <div class="game-info-wrapper">
-                <div class="game-info-text" id="game-tip">Вопрос: 1/5 | Зарядка: 0%</div>
-                <div class="combo-indicator" id="combo-alert"></div>
-            </div>
-
-            <!-- Шкала прогресса -->
-            <div class="progress-bar-container">
-                <div id="progress-bar" style="width: 0%;"></div>
-            </div>
-
-            <!-- Управление игровым полем (Перемешивание) -->
-            <div class="game-controls">
-                <button id="btn-shuffle" class="control-btn">🔄 Перемешать поле</button>
-            </div>
-            
-            <div id="game-board"></div>
+            <div id="progress-text" class="progress-text">Зарядка: 0%</div>
         </div>
 
+        <!-- Сетка "Три в ряд" -->
+        <div id="game-board" class="game-board">
+            <!-- Плитки сгенерируются из js/game.js -->
+        </div>
+
+        <!-- МОДАЛЬНОЕ ОКНО КВИЗА -->
+        <div id="quiz-modal" class="quiz-modal hidden">
+            <div class="quiz-content">
+                <div class="quiz-header">
+                    <span class="quiz-badge">Проверка знаний</span>
+                </div>
+                <h3 id="quiz-question">Загрузка вопроса...</h3>
+                <div id="quiz-answers" class="quiz-answers">
+                    <!-- Кнопки ответов сгенерируются динамически -->
+                </div>
+            </div>
+        </div>
     </div>
 
-    <script src="app.js"></script>
+    <!-- Подключаем модули -->
+    <script type="module" src="app.js"></script>
 </body>
 </html>

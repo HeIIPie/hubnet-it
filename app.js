@@ -1,411 +1,428 @@
-import { lessons } from './js/data/lessons.js';
+// ============================================================
+// 1. ИМПОРТЫ
+// ============================================================
+
 import { 
-    getUnlockedLessons, 
-    unlockLesson, 
-    renderLessonsList, 
-    showScreen 
-} from './js/ui.js';
-import { 
+    BOARD_SIZE, 
+    TILE_TYPES, 
     generateValidBoard, 
     checkMatches, 
-    areNeighbors, 
-    BOARD_SIZE, 
-    TILE_TYPES 
+    areNeighbors 
 } from './js/game.js';
 
-// --- ИГРОВЫЕ ПЕРЕМЕННЫЕ ---
-let currentLesson = null;       // Текущий выбранный урок
-let board = [];                 // Массив плиток на поле
-let selectedIndex = null;       // Индекс первой выбранной плитки
-let progress = 0;               // Шкала зарядки (0 - 100)
-let combo = 0;                  // Комбо совпадений
-let isAnimating = false;        // Флаг анимации
-let isQuizActive = false;       // Идёт ли сейчас квиз
-let currentQuestionIndex = 0;   // Индекс текущего вопроса в уроке
-let timerInterval = null;       // Интервал для таймера квиза
-let quizTimerValue = 100;       // Значение таймера квиза (100% - 0%)
+import { 
+    showScreen, 
+    renderLessonsList, 
+    getUnlockedLessons, 
+    unlockLesson,
+    initTelegram,
+    getUserName
+} from './js/ui.js';
 
-// --- DOM ЭЛЕМЕНТЫ ---
-const mainApp = document.getElementById('main-app');
-const lessonsScreen = document.getElementById('lessons-screen');
-const lectureScreen = document.getElementById('lecture-screen');
-const gameScreen = document.getElementById('game-screen');
+import { lessons } from './js/data/lessons.js';
 
-const gameBoard = document.getElementById('game-board');
-const progressBar = document.getElementById('progress-bar');
-const progressText = document.getElementById('progress-text');
-const btnShuffle = document.getElementById('btn-shuffle');
+// ============================================================
+// 2. СОСТОЯНИЕ ИГРЫ (STATE)
+// ============================================================
 
-const quizModal = document.getElementById('quiz-modal');
-const quizQuestion = document.getElementById('quiz-question');
-const quizAnswers = document.getElementById('quiz-answers');
+let currentLesson = null;
+let currentQuestionIndex = 0;
+let progress = 0; // Процент зарядки от 0 до 100
+let board = [];
+let selectedTileIndex = null;
+let isBoardLocked = false;
 
-// --- ИНИЦИАЛИЗАЦИЯ И НАВИГАЦИЯ ---
+// Параметры таймера для вопросов
+let quizTimer = null;
+let quizTimeLeft = 15;
 
-// Клик по кнопке "Компьютерные сети" в главном меню
-document.getElementById('btn-computer-networks').addEventListener('click', () => {
-    renderLessonsList(selectLesson);
-    showScreen('lessons-screen');
-});
+// ============================================================
+// 3. ИНИЦИАЛИЗАЦИЯ
+// ============================================================
 
-// Клик назад из списка уроков в главное меню
-document.getElementById('btn-lessons-back').addEventListener('click', () => {
+document.addEventListener('DOMContentLoaded', () => {
+    // Инициализируем Telegram Web App
+    initTelegram();
+    
+    // Обновляем приветствие с именем пользователя
+    const userName = getUserName();
+    const subtitle = document.querySelector('.main-subtitle');
+    if (subtitle && userName) {
+        subtitle.textContent = `Привет, ${userName}! Изучай технологии, играя в "Три в ряд"!`;
+    }
+
+    // 1. Кнопка «Компьютерные сети» в главном меню
+    const btnNetworks = document.getElementById('btn-computer-networks');
+    if (btnNetworks) {
+        btnNetworks.addEventListener('click', () => {
+            renderLessonsList(selectLesson);
+            showScreen('lessons-screen');
+        });
+    }
+
+    // 2. Назад из списка уроков в главное меню
+    const btnLessonsBack = document.getElementById('btn-lessons-back');
+    if (btnLessonsBack) {
+        btnLessonsBack.addEventListener('click', () => {
+            showScreen('main-app');
+        });
+    }
+
+    // 3. Назад из лекции в список уроков
+    const btnLectureBack = document.getElementById('btn-lecture-back');
+    if (btnLectureBack) {
+        btnLectureBack.addEventListener('click', () => {
+            showScreen('lessons-screen');
+        });
+    }
+
+    // 4. Кнопка «Начать практику» на экране лекции
+    const btnStartPractice = document.getElementById('btn-start-practice');
+    if (btnStartPractice) {
+        btnStartPractice.addEventListener('click', () => {
+            startPractice();
+        });
+    }
+
+    // 5. Кнопка «Выход» из игры в список уроков
+    const btnBack = document.getElementById('btn-back');
+    if (btnBack) {
+        btnBack.addEventListener('click', () => {
+            clearInterval(quizTimer);
+            showScreen('lessons-screen');
+        });
+    }
+
+    // 6. Кнопка «Смешать» на игровом поле
+    const btnShuffle = document.getElementById('btn-shuffle');
+    if (btnShuffle) {
+        btnShuffle.addEventListener('click', () => {
+            if (!isBoardLocked) {
+                board = generateValidBoard();
+                renderBoard();
+            }
+        });
+    }
+
+    // Принудительно показываем главный экран при старте
     showScreen('main-app');
 });
 
-// Клик назад из лекции в список уроков
-document.getElementById('btn-lecture-back').addEventListener('click', () => {
-    renderLessonsList(selectLesson); // перерисовываем, если вдруг обновился прогресс
-    showScreen('lessons-screen');
-});
+// ============================================================
+// 4. ЛОГИКА ВЫБОРА УРОКА
+// ============================================================
 
-// Клик назад из игры (выход в меню)
-document.getElementById('btn-back').addEventListener('click', () => {
-    stopQuizTimer();
-    
-    // Чистим все хвосты и блокировки
-    gameBoard.classList.remove('board-locked');
-    progressBar.classList.remove('timer-mode');
-    closeQuizUI();
-    
-    renderLessonsList(selectLesson);
-    showScreen('lessons-screen');
-});
-
-// Выбор урока из списка
 function selectLesson(lesson) {
     currentLesson = lesson;
+    currentQuestionIndex = 0;
+    progress = 0;
     
-    // Заполняем экран лекции
-    document.getElementById('lecture-title').innerText = lesson.title;
-    document.getElementById('lecture-text').innerHTML = lesson.theory;
+    // Заполняем экран лекции данными
+    const titleEl = document.getElementById('lecture-title');
+    const textEl = document.getElementById('lecture-text');
+    
+    if (titleEl) titleEl.textContent = lesson.title;
+    if (textEl) textEl.innerHTML = lesson.lecture;
     
     showScreen('lecture-screen');
 }
 
-// Старт практики после прочтения лекции
-document.getElementById('btn-start-practice').addEventListener('click', () => {
-    if (!currentLesson) return;
-    showScreen('game-screen');
-    startGame();
-});
+// ============================================================
+// 5. ЗАПУСК ИГРЫ "ТРИ В РЯД"
+// ============================================================
 
-// --- ЛОГИКА ИГРЫ "ТРИ В РЯД" ---
-
-function startGame() {
+function startPractice() {
     progress = 0;
-    currentQuestionIndex = 0;
-    combo = 0;
-    isAnimating = false;
-    isQuizActive = false;
-    selectedIndex = null;
-    
-    // Гарантированно чистим стили шкалы и игрового поля при старте
-    progressBar.classList.remove('timer-mode');
-    progressBar.style.width = '0%';
-    gameBoard.classList.remove('board-locked');
-    
-    btnShuffle.disabled = false;
-    updateProgressUI();
-    closeQuizUI();
-    
-    // Создаем поле
+    updateProgressBar();
     board = generateValidBoard();
     renderBoard();
+    showScreen('game-screen');
 }
 
-// Отрисовка игрового поля
+// ============================================================
+// 6. РЕНДЕРИНГ И ЛОГИКА ИГРОВОГО ПОЛЯ
+// ============================================================
+
 function renderBoard() {
-    gameBoard.innerHTML = '';
+    const boardContainer = document.getElementById('game-board');
+    if (!boardContainer) return;
+    
+    boardContainer.innerHTML = '';
+
+    if (isBoardLocked) {
+        boardContainer.classList.add('board-locked');
+    } else {
+        boardContainer.classList.remove('board-locked');
+    }
+
     board.forEach((tile, index) => {
-        const tileEl = document.createElement('div');
-        tileEl.className = 'tile';
-        tileEl.innerText = tile;
-        tileEl.dataset.index = index;
-        
-        if (index === selectedIndex) {
-            tileEl.classList.add('selected');
+        const tileElement = document.createElement('div');
+        tileElement.className = 'tile';
+        tileElement.textContent = tile || '⬛';
+        tileElement.dataset.index = index;
+
+        if (selectedTileIndex === index) {
+            tileElement.classList.add('selected');
         }
-        
-        tileEl.addEventListener('click', () => handleTileClick(index));
-        gameBoard.appendChild(tileEl);
+
+        tileElement.addEventListener('click', () => handleTileClick(index));
+        boardContainer.appendChild(tileElement);
     });
 }
 
-// Обработка клика по плитке
 async function handleTileClick(index) {
-    if (isAnimating || isQuizActive) return;
+    if (isBoardLocked) return;
 
-    if (selectedIndex === null) {
-        selectedIndex = index;
+    if (selectedTileIndex === null) {
+        selectedTileIndex = index;
         renderBoard();
     } else {
-        const firstIndex = selectedIndex;
-        selectedIndex = null;
-
-        if (firstIndex === index) {
-            renderBoard();
-            return;
-        }
+        const firstIndex = selectedTileIndex;
+        selectedTileIndex = null;
 
         if (areNeighbors(firstIndex, index)) {
-            isAnimating = true;
-            // Пробуем поменять местами
+            isBoardLocked = true;
+            renderBoard();
+
             swapTiles(firstIndex, index);
             renderBoard();
 
-            // Ждем завершения анимации перемещения
-            await delay(150);
-
             const matches = checkMatches(board);
+
             if (matches.length > 0) {
-                // Если совпадение есть — убираем плитки
-                combo = 1;
                 await processMatches(matches);
             } else {
-                // Если совпадений нет — возвращаем плитки обратно
+                await delay(200);
                 swapTiles(firstIndex, index);
+                isBoardLocked = false;
                 renderBoard();
             }
-            isAnimating = false;
         } else {
-            // Если кликнули не на соседа — выбираем новую плитку
-            selectedIndex = index;
+            selectedTileIndex = index;
             renderBoard();
         }
     }
 }
 
-// Меняет местами элементы в массиве
-function swapTiles(i1, i2) {
-    const temp = board[i1];
-    board[i1] = board[i2];
-    board[i2] = temp;
+function swapTiles(idx1, idx2) {
+    const temp = board[idx1];
+    board[idx1] = board[idx2];
+    board[idx2] = temp;
 }
 
-// Обработка и удаление совпавших плиток
 async function processMatches(matches) {
-    // 1. Начисляем прогресс
-    const earnedProgress = matches.length * 2 * combo;
-    progress = Math.min(100, progress + earnedProgress);
-    updateProgressUI();
-
-    // 2. Визуально подсвечиваем и удаляем
-    const tileEls = gameBoard.querySelectorAll('.tile');
+    const tileElements = document.querySelectorAll('.tile');
     matches.forEach(idx => {
-        tileEls[idx].classList.add('match');
-        board[idx] = ''; // Очищаем в массиве
+        if (tileElements[idx]) {
+            tileElements[idx].classList.add('match');
+        }
     });
 
-    await delay(200);
+    await delay(250);
 
-    // 3. Сдвигаем плитки сверху вниз
-    applyGravity();
+    progress = Math.min(100, progress + matches.length * 5);
+    updateProgressBar();
+
+    matches.forEach(idx => {
+        board[idx] = null;
+    });
+
+    dropTiles();
     renderBoard();
-    await delay(150);
+    
+    await delay(300);
 
-    // 4. Заполняем пустоты сверху новыми плитками
-    fillEmptyTiles();
-    renderBoard();
-    await delay(150);
-
-    // 5. Проверяем новые совпадения (каскад/комбо)
     const nextMatches = checkMatches(board);
     if (nextMatches.length > 0) {
-        combo++;
         await processMatches(nextMatches);
     } else {
-        // Если каскад закончился, проверяем, пора ли запускать квиз
-        checkQuizTrigger();
+        isBoardLocked = false;
+        renderBoard();
+
+        if (progress >= 100) {
+            triggerQuizQuestion();
+        }
     }
 }
 
-// Физика падения плиток вниз
-function applyGravity() {
+function dropTiles() {
     for (let c = 0; c < BOARD_SIZE; c++) {
-        let emptyRow = BOARD_SIZE - 1;
+        let writeIdx = BOARD_SIZE - 1;
         for (let r = BOARD_SIZE - 1; r >= 0; r--) {
-            const idx = r * BOARD_SIZE + c;
-            if (board[idx] !== '') {
-                if (emptyRow !== r) {
-                    board[emptyRow * BOARD_SIZE + c] = board[idx];
-                    board[idx] = '';
+            const readIdx = r * BOARD_SIZE + c;
+            if (board[readIdx] !== null) {
+                board[writeIdx * BOARD_SIZE + c] = board[readIdx];
+                if (writeIdx !== r) {
+                    board[readIdx] = null;
                 }
-                emptyRow--;
+                writeIdx--;
             }
         }
-    }
-}
-
-// Заполнение пустых клеток новыми плитками
-function fillEmptyTiles() {
-    for (let i = 0; i < board.length; i++) {
-        if (board[i] === '') {
-            board[i] = TILE_TYPES[Math.floor(Math.random() * TILE_TYPES.length)];
+        
+        for (let r = writeIdx; r >= 0; r--) {
+            const idx = r * BOARD_SIZE + c;
+            board[idx] = TILE_TYPES[Math.floor(Math.random() * TILE_TYPES.length)];
         }
     }
 }
 
-// Обновление шкалы прогресса вверху экрана
-function updateProgressUI() {
-    if (isQuizActive) return; // во время квиза шкалой управляет таймер
+function updateProgressBar() {
+    const progressBar = document.getElementById('progress-bar');
+    const progressText = document.getElementById('progress-text');
     
-    progressBar.style.width = `${progress}%`;
-    progressText.innerText = `Вопрос: ${currentQuestionIndex}/5 | Зарядка: ${progress}%`;
-}
-
-// Кнопка принудительного перемешивания поля
-btnShuffle.addEventListener('click', () => {
-    if (isAnimating || isQuizActive) return;
-    board = generateValidBoard();
-    renderBoard();
-});
-
-// Вспомогательная задержка
-function delay(ms) {
-    return new Promise(resolve => setTimeout(resolve, ms));
-}
-
-// --- ЛОГИКА ВИКТОРИНЫ (КВИЗ) ---
-
-// Проверяем, набралось ли 100% для вызова вопроса
-function checkQuizTrigger() {
-    if (progress >= 100 && currentQuestionIndex < 5) {
-        startQuizRound();
+    if (progressBar) {
+        progressBar.classList.remove('timer-mode');
+        progressBar.style.width = `${progress}%`;
+    }
+    if (progressText) {
+        progressText.textContent = `Зарядка: ${progress}%`;
     }
 }
 
-// Запуск фазы ответа на вопрос
-function startQuizRound() {
-    isQuizActive = true;
-    btnShuffle.disabled = true;
-    
-    // Блокируем игровое поле и делаем его тусклым
-    gameBoard.classList.add('board-locked');
+// ============================================================
+// 7. КВИЗ (ВИКТОРИНА)
+// ============================================================
 
-    // Переводим шкалу прогресса в красный режим таймера
-    progressBar.classList.add('timer-mode');
+function triggerQuizQuestion() {
+    isBoardLocked = true;
+    renderBoard();
 
-    // Получаем текущий вопрос из базы урока
-    const questionData = currentLesson.questions[currentQuestionIndex];
-    quizQuestion.innerText = questionData.q;
+    const questions = currentLesson.questions;
     
-    // Рендерим варианты ответов
-    quizAnswers.innerHTML = '';
-    questionData.a.forEach((ans, idx) => {
+    if (currentQuestionIndex >= questions.length) {
+        finishLesson();
+        return;
+    }
+
+    const questionData = questions[currentQuestionIndex];
+    const modal = document.getElementById('quiz-modal');
+    const questionEl = document.getElementById('quiz-question');
+    const answersContainer = document.getElementById('quiz-answers');
+    const progressBar = document.getElementById('progress-bar');
+    const progressText = document.getElementById('progress-text');
+
+    if (!modal || !questionEl || !answersContainer) return;
+
+    if (progressBar) {
+        progressBar.classList.add('timer-mode');
+        progressBar.style.width = '100%';
+    }
+    quizTimeLeft = 15;
+    if (progressText) {
+        progressText.textContent = `Время на ответ: ${quizTimeLeft} сек`;
+    }
+
+    questionEl.textContent = questionData.question;
+    answersContainer.innerHTML = '';
+
+    questionData.answers.forEach((answer, idx) => {
         const btn = document.createElement('button');
         btn.className = 'btn-answer';
-        btn.innerText = ans;
-        btn.addEventListener('click', () => handleAnswerClick(idx));
-        quizAnswers.appendChild(btn);
+        btn.textContent = answer;
+        btn.addEventListener('click', () => handleAnswerClick(idx, questionData.correct, btn));
+        answersContainer.appendChild(btn);
     });
 
-    // Показываем окно вопроса
-    quizModal.classList.remove('hidden');
+    modal.classList.remove('hidden');
 
-    // Запускаем таймер на 15 секунд
-    startQuizTimer();
-}
-
-// Таймер на ответ
-function startQuizTimer() {
-    stopQuizTimer();
-    
-    quizTimerValue = 100;
-    progressBar.style.width = '100%';
-    
-    const timeLimit = 15000; // 15 секунд
-    const intervalTime = 100; // обновляем каждые 0.1 сек
-    const step = (intervalTime / timeLimit) * 100;
-
-    timerInterval = setInterval(() => {
-        quizTimerValue -= step;
-        progressBar.style.width = `${Math.max(0, quizTimerValue)}%`;
-
-        if (quizTimerValue <= 0) {
-            stopQuizTimer();
-            // Время вышло = неверный ответ
-            handleAnswerResult(false);
+    clearInterval(quizTimer);
+    quizTimer = setInterval(() => {
+        quizTimeLeft--;
+        if (progressBar) {
+            progressBar.style.width = `${(quizTimeLeft / 15) * 100}%`;
         }
-    }, intervalTime);
+        if (progressText) {
+            progressText.textContent = `Время на ответ: ${quizTimeLeft} сек`;
+        }
+
+        if (quizTimeLeft <= 0) {
+            clearInterval(quizTimer);
+            handleTimeOut(questionData.correct);
+        }
+    }, 1000);
 }
 
-function stopQuizTimer() {
-    if (timerInterval) {
-        clearInterval(timerInterval);
-        timerInterval = null;
+function handleAnswerClick(selectedIdx, correctIdx, clickedBtn) {
+    clearInterval(quizTimer);
+    
+    const buttons = document.querySelectorAll('.btn-answer');
+    buttons.forEach(btn => btn.disabled = true);
+
+    if (selectedIdx === correctIdx) {
+        clickedBtn.classList.add('correct');
+        setTimeout(() => {
+            closeQuizUI();
+            currentQuestionIndex++;
+            progress = 0;
+            updateProgressBar();
+            
+            if (currentQuestionIndex < currentLesson.questions.length) {
+                isBoardLocked = false;
+                renderBoard();
+            } else {
+                finishLesson();
+            }
+        }, 1500);
+    } else {
+        clickedBtn.classList.add('wrong');
+        buttons[correctIdx].classList.add('correct');
+        
+        setTimeout(() => {
+            closeQuizUI();
+            alert('❌ Неверно! Попробуйте зарядить батарею заново.');
+            progress = 0;
+            updateProgressBar();
+            board = generateValidBoard();
+            isBoardLocked = false;
+            renderBoard();
+        }, 2000);
     }
 }
 
-// Обработка клика по варианту ответа
-function handleAnswerClick(index) {
-    stopQuizTimer();
-    const isCorrect = index === currentLesson.questions[currentQuestionIndex].correct;
-    handleAnswerResult(isCorrect);
-}
-
-// Результат ответа (правильно / неправильно)
-function handleAnswerResult(isCorrect) {
-    const buttons = quizAnswers.querySelectorAll('.btn-answer');
-    const correctIdx = currentLesson.questions[currentQuestionIndex].correct;
-
-    // Подсвечиваем кнопки зеленым/красным
-    buttons.forEach((btn, idx) => {
-        btn.disabled = true;
-        if (idx === correctIdx) {
-            btn.classList.add('correct');
-        } else if (!isCorrect) {
-            btn.classList.add('wrong');
-        }
-    });
+function handleTimeOut(correctIdx) {
+    const buttons = document.querySelectorAll('.btn-answer');
+    buttons.forEach(btn => btn.disabled = true);
+    buttons[correctIdx].classList.add('correct');
 
     setTimeout(() => {
         closeQuizUI();
-        
-        if (isCorrect) {
-            currentQuestionIndex++;
-            progress = 0; // Сбрасываем шкалу для накопления на следующий вопрос
-            
-            // Проверяем, пройден ли весь урок (все 5 вопросов)
-            if (currentQuestionIndex >= 5) {
-                handleLessonVictory();
-                return;
-            }
-        } else {
-            // При ошибке штрафуем шкалу прогресса на 40% и даём копить заново на тот же вопрос
-            progress = Math.max(0, progress - 40);
-        }
-
-        // Возвращаем игру в обычное русло
-        isQuizActive = false;
-        btnShuffle.disabled = false;
-        gameBoard.classList.remove('board-locked');
-        progressBar.classList.remove('timer-mode');
-        updateProgressUI();
-        
-        // На случай если после штрафа всё ещё осталось 100%
-        checkQuizTrigger();
-
-    }, 1500); // Показываем результат подсвеченных кнопок 1.5 секунды
+        alert('⏰ Время вышло! Попробуйте зарядить батарею заново.');
+        progress = 0;
+        updateProgressBar();
+        board = generateValidBoard();
+        isBoardLocked = false;
+        renderBoard();
+    }, 2000);
 }
 
-// Действие при успешном прохождении всего урока
-function handleLessonVictory() {
-    alert(`🏆 Поздравляем! Лекция "${currentLesson.title}" успешно усвоена на 100%!`);
+function closeQuizUI() {
+    const modal = document.getElementById('quiz-modal');
+    if (modal) modal.classList.add('hidden');
+}
+
+// ============================================================
+// 8. ЗАВЕРШЕНИЕ УРОКА
+// ============================================================
+
+function finishLesson() {
+    clearInterval(quizTimer);
+    closeQuizUI();
+
+    alert(`🎉 Поздравляем! Вы полностью изучили урок: "${currentLesson.title}"!`);
     
-    // Разблокируем СЛЕДУЮЩИЙ урок
-    const currentLessonIndex = lessons.findIndex(l => l.id === currentLesson.id);
-    if (currentLessonIndex !== -1 && currentLessonIndex < lessons.length - 1) {
-        const nextLessonId = lessons[currentLessonIndex + 1].id;
+    const currentIdx = lessons.findIndex(l => l.id === currentLesson.id);
+    if (currentIdx !== -1 && currentIdx + 1 < lessons.length) {
+        const nextLessonId = lessons[currentIdx + 1].id;
         unlockLesson(nextLessonId);
     }
 
-    // Возвращаемся на экран выбора уроков
-    renderLessonsList(selectLesson);
     showScreen('lessons-screen');
 }
 
-// Закрытие UI-модалки вопроса
-function closeQuizUI() {
-    quizModal.classList.add('hidden');
+// ============================================================
+// 9. ВСПОМОГАТЕЛЬНЫЕ ФУНКЦИИ
+// ============================================================
+
+function delay(ms) {
+    return new Promise(resolve => setTimeout(resolve, ms));
 }
