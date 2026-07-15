@@ -12,13 +12,20 @@
 
     <!-- ЭКРАН 1: ГЛАВНОЕ МЕНЮ -->
     <div id="main-app" class="container">
+        <!-- Баннер -->
         <div class="logo-container">
             <img src="images/had-banner.png" alt="Hubnet Logo" class="main-logo">
         </div>
         
-        <h1 class="main-title">Hubnet IT</h1>
-        <p class="main-subtitle">Изучай технологии, играя в "Три в ряд"!</p>
+        <!-- Кнопка профиля -->
+        <button id="btn-profile" class="btn-profile-main">
+            👤 Мой Профиль
+        </button>
         
+        <!-- Разделитель -->
+        <div class="divider"></div>
+        
+        <!-- Кнопки направлений -->
         <div class="menu-buttons">
             <button id="btn-computer-networks" class="btn-menu">🔌 Компьютерные сети</button>
             <button id="btn-quizzes" class="btn-menu locked-menu" disabled>📝 Квизы (Скоро)</button>
@@ -64,8 +71,12 @@
                 <button id="btn-shuffle" class="btn-shuffle">🔄 Смешать</button>
             </div>
         </div>
-
-        <!-- Шкала прогресса (в игре) / Таймер (в квизе) -->
+    <!-- Щиты и Комбо -->
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+        <div id="shields-display" style="font-size: 1.4rem; letter-spacing: 2px;">🛡️ 🛡️ 🛡️</div>
+            <div id="combo-display" style="font-size: 0.9rem; color: #64748b;">🔥 Комбо: 0</div>
+    </div>
+        <!-- Шкала прогресса -->
         <div class="progress-container">
             <div class="progress-bar-wrapper">
                 <div id="progress-bar" class="progress-bar"></div>

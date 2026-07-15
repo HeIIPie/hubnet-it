@@ -32,9 +32,29 @@ let board = [];
 let selectedTileIndex = null;
 let isBoardLocked = false;
 
-// Параметры таймера для вопросов
+// НОВЫЕ ПЕРЕМЕННЫЕ ДЛЯ МЕХАНИКИ ЩИТОВ
 let quizTimer = null;
 let quizTimeLeft = 15;
+let shields = 3;
+let combo = 0;
+let correctAnswers = 0;
+let wrongAnswers = 0;
+let startTime = null;
+let elapsedTime = 0;
+
+// ФРАЗЫ ДЛЯ ПОРАЖЕНИЯ
+const lossPhrases = [
+    "💥 Сеть подверглась DDoS-атаке. Щиты не выдержали.",
+    "🔥 Брандмауэр пробит. Злоумышленник проник в сеть.",
+    "⚡ Критическая ошибка маршрутизации. Сеть недоступна.",
+    "🕵️ Фишинговая атака прошла успешно. Доступ потерян.",
+    "📡 Потеря связи с DNS-сервером. Узлы не отвечают.",
+    "🧨 Вредоносный пакет проник в ядро сети. Система пала.",
+    "🔌 Сетевой экран отключён. Трафик перехвачен.",
+    "🌩️ Уязвимость в протоколе TCP/IP использована. Сеть скомпрометирована.",
+    "💀 Сервер перегружен. Все соединения разорваны.",
+    "🏴‍☠️ Несанкционированный доступ подтверждён. Сеть под контролем атакующего."
+];
 
 // ============================================================
 // 3. ИНИЦИАЛИЗАЦИЯ
@@ -132,10 +152,21 @@ function selectLesson(lesson) {
 // ============================================================
 
 function startPractice() {
+    // Сбрасываем все переменные
     progress = 0;
-    updateProgressBar();
+    shields = 3;
+    combo = 0;
+    correctAnswers = 0;
+    wrongAnswers = 0;
+    currentQuestionIndex = 0;
+    startTime = Date.now();
+    elapsedTime = 0;
+    
     board = generateValidBoard();
     renderBoard();
+    updateShieldsDisplay();
+    updateComboDisplay();
+    updateProgressBar();
     showScreen('game-screen');
 }
 
@@ -280,7 +311,39 @@ function updateProgressBar() {
 }
 
 // ============================================================
-// 7. КВИЗ (ВИКТОРИНА)
+// 7. ОТОБРАЖЕНИЕ ЩИТОВ И КОМБО
+// ============================================================
+
+function updateShieldsDisplay() {
+    const shieldContainer = document.getElementById('shields-display');
+    if (!shieldContainer) return;
+    
+    let display = '';
+    for (let i = 0; i < 3; i++) {
+        if (i < shields) {
+            display += '🛡️ ';
+        } else {
+            display += '⬜ ';
+        }
+    }
+    shieldContainer.textContent = display.trim();
+}
+
+function updateComboDisplay() {
+    const comboDisplay = document.getElementById('combo-display');
+    if (!comboDisplay) return;
+    
+    if (combo > 0) {
+        comboDisplay.textContent = `🔥 Комбо: ${combo}`;
+        comboDisplay.style.color = '#39ff14';
+    } else {
+        comboDisplay.textContent = '🔥 Комбо: 0';
+        comboDisplay.style.color = '#64748b';
+    }
+}
+
+// ============================================================
+// 8. КВИЗ (ВИКТОРИНА) — ОБНОВЛЕННАЯ ВЕРСИЯ
 // ============================================================
 
 function triggerQuizQuestion() {
@@ -290,7 +353,7 @@ function triggerQuizQuestion() {
     const questions = currentLesson.questions;
     
     if (currentQuestionIndex >= questions.length) {
-        finishLesson();
+        showWinScreen();
         return;
     }
 
@@ -349,33 +412,65 @@ function handleAnswerClick(selectedIdx, correctIdx, clickedBtn) {
     buttons.forEach(btn => btn.disabled = true);
 
     if (selectedIdx === correctIdx) {
+        // ✅ ПРАВИЛЬНЫЙ ОТВЕТ
         clickedBtn.classList.add('correct');
+        combo++;
+        correctAnswers++;
+        
+        // Сообщение о комбо
+        if (combo >= 3) {
+            const comboMessages = ['🔥 Отлично! Комбо x3!', '🔥🔥 Мощь! Комбо x4!', '🔥🔥🔥 НЕОСТАНОВИМ!'];
+            const msg = comboMessages[Math.min(combo - 3, comboMessages.length - 1)];
+            showComboMessage(msg);
+        }
+        
         setTimeout(() => {
             closeQuizUI();
             currentQuestionIndex++;
             progress = 0;
             updateProgressBar();
+            updateShieldsDisplay();
+            updateComboDisplay();
             
             if (currentQuestionIndex < currentLesson.questions.length) {
                 isBoardLocked = false;
                 renderBoard();
             } else {
-                finishLesson();
+                showWinScreen();
             }
-        }, 1500);
+        }, 1200);
+        
     } else {
+        // ❌ НЕПРАВИЛЬНЫЙ ОТВЕТ
         clickedBtn.classList.add('wrong');
         buttons[correctIdx].classList.add('correct');
+        shields--;
+        wrongAnswers++;
+        combo = 0;
+        
+        updateShieldsDisplay();
+        updateComboDisplay();
         
         setTimeout(() => {
             closeQuizUI();
-            alert('❌ Неверно! Попробуйте зарядить батарею заново.');
+            
+            if (shields <= 0) {
+                showLossScreen();
+                return;
+            }
+            
+            const shieldMsg = shields === 2 
+                ? '❌ Атака прошла! Осталось щитов: ' + shields 
+                : '⚠️ Ещё один щит пал! Осталось: ' + shields;
+            alert(shieldMsg);
+            
             progress = 0;
             updateProgressBar();
             board = generateValidBoard();
             isBoardLocked = false;
             renderBoard();
-        }, 2000);
+            
+        }, 1500);
     }
 }
 
@@ -386,7 +481,17 @@ function handleTimeOut(correctIdx) {
 
     setTimeout(() => {
         closeQuizUI();
-        alert('⏰ Время вышло! Попробуйте зарядить батарею заново.');
+        shields--;
+        combo = 0;
+        updateShieldsDisplay();
+        updateComboDisplay();
+        
+        if (shields <= 0) {
+            showLossScreen();
+            return;
+        }
+        
+        alert(`⏰ Время вышло! Осталось щитов: ${shields}`);
         progress = 0;
         updateProgressBar();
         board = generateValidBoard();
@@ -400,29 +505,178 @@ function closeQuizUI() {
     if (modal) modal.classList.add('hidden');
 }
 
-// ============================================================
-// 8. ЗАВЕРШЕНИЕ УРОКА
-// ============================================================
-
-function finishLesson() {
-    clearInterval(quizTimer);
-    closeQuizUI();
-
-    alert(`🎉 Поздравляем! Вы полностью изучили урок: "${currentLesson.title}"!`);
+function showComboMessage(text) {
+    const container = document.getElementById('game-screen');
+    if (!container) return;
     
+    const msg = document.createElement('div');
+    msg.className = 'combo-message';
+    msg.textContent = text;
+    msg.style.cssText = `
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        font-size: 2rem;
+        font-weight: 700;
+        color: #39ff14;
+        text-shadow: 0 0 30px rgba(57, 255, 20, 0.8);
+        z-index: 50;
+        animation: comboPop 0.8s ease forwards;
+        pointer-events: none;
+    `;
+    container.appendChild(msg);
+    
+    setTimeout(() => {
+        msg.remove();
+    }, 1000);
+}
+
+// ============================================================
+// 9. ЭКРАН ПОБЕДЫ
+// ============================================================
+
+function showWinScreen() {
+    const modal = document.getElementById('quiz-modal');
+    if (modal) modal.classList.add('hidden');
+    
+    const elapsed = Math.floor((Date.now() - startTime) / 1000);
+    const minutes = Math.floor(elapsed / 60);
+    const seconds = elapsed % 60;
+    const timeStr = `${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
+    
+    let resultText = '';
+    let resultSubtext = '';
+    const score = correctAnswers;
+    const total = currentLesson.questions.length;
+    
+    if (score === total) {
+        resultText = '🌟 ИДЕАЛЬНО! 5/5';
+        resultSubtext = 'Ты настоящий сетевик! Угроза нейтрализована полностью!';
+    } else if (score >= 4) {
+        resultText = '🔥 ОТЛИЧНО! 4/5';
+        resultSubtext = 'Отличная работа! Ты понял основное, но есть нюансы.';
+    } else if (score >= 3) {
+        resultText = '💪 ХОРОШО! 3/5';
+        resultSubtext = 'Основа тебе понятна, стоит перечитать лекцию.';
+    } else {
+        resultText = '📖 НЕПЛОХО! ' + score + '/5';
+        resultSubtext = 'Рекомендуем перечитать лекцию и попробовать заново.';
+    }
+    
+    const modalContent = document.querySelector('.quiz-content');
+    if (modalContent) {
+        modalContent.innerHTML = `
+            <div class="quiz-header">
+                <span class="quiz-badge">🎉 Урок пройден!</span>
+            </div>
+            <h3 style="font-size: 2rem; color: #39ff14;">${resultText}</h3>
+            <p style="color: #94a3b8; margin: 10px 0;">${resultSubtext}</p>
+            <div style="display: flex; justify-content: space-around; padding: 10px 0; font-size: 0.9rem; color: #cbd5e1;">
+                <span>🔥 Комбо: ${combo}</span>
+                <span>⏱️ ${timeStr}</span>
+                <span>🛡️ Щитов: ${shields}/3</span>
+            </div>
+            <div style="display: flex; flex-direction: column; gap: 10px; margin-top: 15px;">
+                <button onclick="restartLesson()" class="btn-answer" style="text-align: center; background: rgba(57, 255, 20, 0.2); border-color: #39ff14;">🔄 Пройти заново</button>
+                <button onclick="nextLesson()" class="btn-answer" style="text-align: center; background: rgba(59, 130, 246, 0.2); border-color: #3b82f6;">➡️ Следующий урок</button>
+                <button onclick="goToMenu()" class="btn-answer" style="text-align: center;">🏠 В меню</button>
+            </div>
+        `;
+        modal.classList.remove('hidden');
+    }
+}
+
+// ============================================================
+// 10. ЭКРАН ПОРАЖЕНИЯ
+// ============================================================
+
+function showLossScreen() {
+    const modal = document.getElementById('quiz-modal');
+    if (modal) modal.classList.add('hidden');
+    
+    const randomPhrase = lossPhrases[Math.floor(Math.random() * lossPhrases.length)];
+    const elapsed = Math.floor((Date.now() - startTime) / 1000);
+    const minutes = Math.floor(elapsed / 60);
+    const seconds = elapsed % 60;
+    const timeStr = `${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
+    
+    const modalContent = document.querySelector('.quiz-content');
+    if (modalContent) {
+        modalContent.innerHTML = `
+            <div class="quiz-header">
+                <span class="quiz-badge" style="border-color: #ef4444; color: #ef4444;">💀 СЕТЬ ПАЛА</span>
+            </div>
+            <h3 style="font-size: 1.3rem; color: #f87171;">${randomPhrase}</h3>
+            <p style="color: #94a3b8; margin: 10px 0;">Атака оказалась слишком мощной. Попробуй ещё раз!</p>
+            <div style="display: flex; justify-content: space-around; padding: 10px 0; font-size: 0.9rem; color: #cbd5e1;">
+                <span>📊 Результат: ${correctAnswers}/5</span>
+                <span>⏱️ ${timeStr}</span>
+            </div>
+            <div style="display: flex; flex-direction: column; gap: 10px; margin-top: 15px;">
+                <button onclick="restartLesson()" class="btn-answer" style="text-align: center; background: rgba(239, 68, 68, 0.2); border-color: #ef4444;">🔄 Пройти заново</button>
+                <button onclick="goToMenu()" class="btn-answer" style="text-align: center;">🏠 В меню</button>
+            </div>
+        `;
+        modal.classList.remove('hidden');
+    }
+}
+
+// ============================================================
+// 11. ФУНКЦИИ ДЛЯ КНОПОК
+// ============================================================
+
+function restartLesson() {
+    closeQuizUI();
+    startPractice();
+}
+
+function nextLesson() {
+    closeQuizUI();
     const currentIdx = lessons.findIndex(l => l.id === currentLesson.id);
     if (currentIdx !== -1 && currentIdx + 1 < lessons.length) {
         const nextLessonId = lessons[currentIdx + 1].id;
         unlockLesson(nextLessonId);
+        const nextLesson = lessons[currentIdx + 1];
+        selectLesson(nextLesson);
+    } else {
+        alert('🎉 Ты прошёл все уроки! Возвращаемся в меню.');
+        showScreen('main-app');
     }
+}
 
-    showScreen('lessons-screen');
+function goToMenu() {
+    closeQuizUI();
+    showScreen('main-app');
 }
 
 // ============================================================
-// 9. ВСПОМОГАТЕЛЬНЫЕ ФУНКЦИИ
+// 12. ЭКСПОРТ ФУНКЦИЙ В ГЛОБАЛЬНУЮ ОБЛАСТЬ (ДЛЯ onclick)
 // ============================================================
 
+window.restartLesson = function() {
+    closeQuizUI();
+    startPractice();
+};
+
+window.goToMenu = function() {
+    closeQuizUI();
+    showScreen('main-app');
+};
+
+window.nextLesson = function() {
+    closeQuizUI();
+    const currentIdx = lessons.findIndex(l => l.id === currentLesson.id);
+    if (currentIdx !== -1 && currentIdx + 1 < lessons.length) {
+        const nextLessonId = lessons[currentIdx + 1].id;
+        unlockLesson(nextLessonId);
+        const nextLesson = lessons[currentIdx + 1];
+        selectLesson(nextLesson);
+    } else {
+        alert('🎉 Ты прошёл все уроки! Возвращаемся в меню.');
+        showScreen('main-app');
+    }
+};
 function delay(ms) {
     return new Promise(resolve => setTimeout(resolve, ms));
 }

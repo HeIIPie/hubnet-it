@@ -16,7 +16,6 @@ body {
     align-items: center;
 }
 
-/* Глобальный класс для скрытия неактивных экранов */
 .hidden {
     display: none !important;
 }
@@ -30,7 +29,7 @@ body {
     background: #030712;
     display: flex;
     flex-direction: column;
-    padding: 20px;
+    padding: 12px 20px 20px 20px;
     box-sizing: border-box;
     justify-content: flex-start;
     align-items: stretch;
@@ -54,7 +53,7 @@ body {
         max-height: 100vh;
         border: none;
         border-radius: 0;
-        padding: 16px;
+        padding: 0 16px 16px 16px;
         box-shadow: none;
         overflow: visible;
     }
@@ -62,11 +61,7 @@ body {
 
 @media (max-width: 400px) {
     .container {
-        padding: 12px;
-    }
-    
-    .main-title {
-        font-size: 1.8rem !important;
+        padding: 0 12px 12px 12px;
     }
     
     .btn-menu {
@@ -86,16 +81,19 @@ body {
 
 /* --- ЭКРАН 1: ГЛАВНОЕ МЕНЮ --- */
 #main-app {
-    justify-content: center;
-    align-items: center;
+    justify-content: flex-start;
+    align-items: stretch;
     text-align: center;
-    gap: 20px;
+    gap: 8px;
 }
 
+/* ===== БАННЕР (исправленный) ===== */
 .logo-container {
     width: 100%;
-    max-width: 280px;
-    margin-bottom: 10px;
+    padding: 0;
+    margin: 0;
+    box-sizing: border-box;
+    flex-shrink: 0;
 }
 
 .main-logo {
@@ -103,30 +101,50 @@ body {
     height: auto;
     display: block;
     border-radius: 12px;
+    margin: 0;
+    padding: 0;
 }
 
-.main-title {
-    font-size: 2.2rem;
-    font-weight: 800;
-    letter-spacing: 1px;
-    background: linear-gradient(135deg, #39ff14 0%, #60efff 100%);
-    -webkit-background-clip: text;
-    background-clip: text;
-    -webkit-text-fill-color: transparent;
-    text-shadow: 0 0 20px rgba(57, 255, 20, 0.2);
+/* ===== КНОПКА ПРОФИЛЯ ===== */
+.btn-profile-main {
+    background: linear-gradient(135deg, #3b82f6, #1d4ed8);
+    color: #ffffff;
+    border: none;
+    padding: 16px 20px;
+    font-size: 1.2rem;
+    font-weight: 700;
+    border-radius: 14px;
+    cursor: pointer;
+    transition: all 0.25s ease;
+    width: 100%;
+    text-align: center;
+    box-shadow: 0 4px 20px rgba(59, 130, 246, 0.4);
+    margin-top: 15px;
+    letter-spacing: 0.5px;
 }
 
-.main-subtitle {
-    font-size: 1rem;
-    color: #94a3b8;
-    margin-bottom: 20px;
-    line-height: 1.5;
+.btn-profile-main:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 30px rgba(59, 130, 246, 0.6);
 }
 
+.btn-profile-main:active {
+    transform: scale(0.97);
+}
+
+/* ===== РАЗДЕЛИТЕЛЬ ===== */
+.divider {
+    width: 100%;
+    height: 1px;
+    background: rgba(255, 255, 255, 0.08);
+    margin: 8px 0 4px 0;
+}
+
+/* ===== КНОПКИ МЕНЮ ===== */
 .menu-buttons {
     display: flex;
     flex-direction: column;
-    gap: 15px;
+    gap: 12px;
     width: 100%;
 }
 
@@ -163,7 +181,7 @@ body {
     justify-content: space-between;
     align-items: center;
     width: 100%;
-    margin-bottom: 16px;
+    margin-bottom: 0;
     padding-bottom: 10px;
     border-bottom: 1px solid rgba(255, 255, 255, 0.15);
     flex-shrink: 0;
@@ -197,7 +215,7 @@ body {
     display: flex;
     flex-direction: column;
     gap: 12px;
-    margin-top: 4px;
+    margin-top: 12px;
     flex: 1;
     overflow-y: auto;
     padding: 4px 2px 10px 2px;
@@ -362,7 +380,6 @@ body {
     background: rgba(255, 255, 255, 0.15);
 }
 
-/* Шкала зарядки / Таймер */
 .progress-container {
     margin-bottom: 14px;
     width: 100%;
@@ -399,7 +416,6 @@ body {
     font-weight: 500;
 }
 
-/* Игровая доска */
 .game-board {
     display: grid;
     grid-template-columns: repeat(6, 1fr);
@@ -421,7 +437,6 @@ body {
     transition: all 0.3s ease;
 }
 
-/* Стили плиток */
 .tile {
     background: rgba(30, 41, 59, 0.6);
     border: 1px solid rgba(255, 255, 255, 0.05);
@@ -552,4 +567,23 @@ body {
 @keyframes scaleUp {
     from { transform: scale(0.9); opacity: 0; }
     to { transform: scale(1); opacity: 1; }
+}
+@keyframes comboPop {
+    0% { transform: translate(-50%, -50%) scale(0.5); opacity: 0; }
+    50% { transform: translate(-50%, -50%) scale(1.2); opacity: 1; }
+    100% { transform: translate(-50%, -50%) scale(1); opacity: 0; }
+}
+
+.combo-message {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    font-size: 2rem;
+    font-weight: 700;
+    color: #39ff14;
+    text-shadow: 0 0 30px rgba(57, 255, 20, 0.8);
+    z-index: 50;
+    pointer-events: none;
+    animation: comboPop 0.8s ease forwards;
 }
