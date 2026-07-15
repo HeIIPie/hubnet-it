@@ -106,6 +106,36 @@
                 </div>
             </div>
         </main>
+        <!-- ЭКРАН ВЫБОРА УРОКОВ -->
+<div id="lessons-screen" class="hidden container">
+    <div class="header">
+        <button id="btn-lessons-back" class="btn-back">← Меню</button>
+        <h2>Компьютерные сети</h2>
+    </div>
+    
+    <div class="lessons-list" id="lessons-list">
+        <!-- Карточки уроков будут генерироваться динамически из JS -->
+    </div>
+</div>
+
+<!-- ЭКРАН МИНИ-ЛЕКЦИИ -->
+<div id="lecture-screen" class="hidden container">
+    <div class="header">
+        <button id="btn-lecture-back" class="btn-back">← Уроки</button>
+        <h2 id="lecture-title">Урок 1</h2>
+    </div>
+    
+    <div class="lecture-content-wrapper">
+        <div class="lecture-text" id="lecture-text">
+            <!-- Сюда будет подставляться текст лекции из lessons.js -->
+        </div>
+    </div>
+    
+    <div class="lecture-footer">
+        <button id="btn-start-practice" class="btn-action">Начать практику 🎮</button>
+    </div>
+</div>
+
 
         <!-- ЭКРАН 3: ИГРА ТРИ В РЯД -->
         <div id="game-screen" class="hidden">

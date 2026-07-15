@@ -1,154 +1,96 @@
-// ==========================================
-// 1. ИНИЦИАЛИЗАЦИЯ TELEGRAM WEBAPP
-// ==========================================
-if (window.Telegram && window.Telegram.WebApp) {
-    const tg = window.Telegram.WebApp;
-    tg.ready();
-    tg.setHeaderColor('#000000'); 
-    tg.setBackgroundColor('#03060f'); 
-    tg.expand(); 
-}
+import { lessons } from './js/data/lessons.js';
+import { 
+    getUnlockedLessons, 
+    unlockLesson, 
+    renderLessonsList, 
+    showScreen 
+} from './js/ui.js';
+import { 
+    generateValidBoard, 
+    checkMatches, 
+    areNeighbors, 
+    BOARD_SIZE, 
+    TILE_TYPES 
+} from './js/game.js';
 
-// Элементы интерфейса
-const terminalScreen = document.getElementById('terminal-screen');
+// --- ИГРОВЫЕ ПЕРЕМЕННЫЕ ---
+let currentLesson = null;       // Текущий выбранный урок
+let board = [];                 // Массив плиток на поле
+let selectedIndex = null;       // Индекс первой выбранной плитки
+let progress = 0;               // Шкала зарядки (0 - 100)
+let combo = 0;                  // Комбо совпадений
+let isAnimating = false;        // Флаг анимации
+let isQuizActive = false;       // Идёт ли сейчас квиз
+let currentQuestionIndex = 0;   // Индекс текущего вопроса в уроке
+let timerInterval = null;       // Интервал для таймера квиза
+let quizTimerValue = 100;       // Значение таймера квиза (100% - 0%)
+
+// --- DOM ЭЛЕМЕНТЫ ---
 const mainApp = document.getElementById('main-app');
-const logLines = document.querySelectorAll('.log-line');
-const logsContainer = document.getElementById('logs-container');
-const appLogo = document.getElementById('app-logo');
-
-// Резервный логотип при ошибке загрузки had-banner.png
-function handleLogoError(imgElement) {
-    const parent = imgElement.parentElement;
-    const placeholder = document.createElement('div');
-    placeholder.className = 'logo-placeholder';
-    placeholder.innerText = 'HubNet IT\nAcademy';
-    parent.replaceChild(placeholder, imgElement);
-}
-if(appLogo) {
-    appLogo.onerror = () => handleLogoError(appLogo);
-}
-
-// Запуск анимации терминала
-window.addEventListener('DOMContentLoaded', () => {
-    startTerminalAnimation();
-});
-
-function startTerminalAnimation() {
-    logLines.forEach((line) => {
-        const delay = parseInt(line.getAttribute('data-delay'));
-        setTimeout(() => {
-            line.style.display = 'block';
-            if (logsContainer) logsContainer.scrollTop = logsContainer.scrollHeight;
-        }, delay);
-    });
-
-    setTimeout(() => {
-        if(terminalScreen) {
-            terminalScreen.style.opacity = '0';
-            setTimeout(() => terminalScreen.style.display = 'none', 500);
-        }
-        if(mainApp) mainApp.classList.add('active');
-    }, 4200);
-}
-
-// Заглушки кликов для обычных кнопок
-document.getElementById('btn-profile').addEventListener('click', () => {
-    alert('Открываем профиль пользователя...');
-});
-document.querySelectorAll('.menu-item').forEach(item => {
-    if(item.getAttribute('data-target') !== 'networks') {
-        item.addEventListener('click', () => {
-            alert(`Раздел: ${item.querySelector('.menu-item-title').innerText}`);
-        });
-    }
-});
-
-
-// ==========================================
-// 2. ДВИЖОК ИГРЫ "ТРИ В РЯД + ИНТЕРАКТИВНЫЙ КВИЗ"
-// ==========================================
-
-// Тематические вопросы по SMTP / POP3 / IMAP
-const questions = [
-    {
-        q: "Какой порт по умолчанию используется для незащищенного соединения SMTP?",
-        a: ["25", "110", "143"],
-        correct: 0
-    },
-    {
-        q: "Какой порт используется шифрованным протоколом POP3S (SSL/TLS)?",
-        a: ["465", "993", "995"],
-        correct: 2
-    },
-    {
-        q: "Какой протокол синхронизирует почту между сервером и несколькими устройствами?",
-        a: ["SMTP", "IMAP", "POP3"],
-        correct: 1
-    },
-    {
-        q: "Какую команду отправляет клиент SMTP для приветствия сервера?",
-        a: ["HELO/EHLO", "MAIL FROM", "RCPT TO"],
-        correct: 0
-    },
-    {
-        q: "Безопасный порт IMAPS по умолчанию?",
-        a: ["587", "993", "143"],
-        correct: 1
-    }
-];
-
-// 7 сетевых иконок (без змейки и замков)
-const icons = ['🌐', '💻', '🔌', '📡', '✉️', '⚡', '☁️'];
-const boardSize = 6; 
-let board = [];
-let progress = 0; 
-let combo = 0;
-let selectedIndex = null;
-let isAnimating = false; // Блокировка действий при расчете поля
-let isQuizActive = false; // Активен ли вопрос
-
-let currentQuestionIndex = 0; 
-let gameLoopInterval = null; 
-
-// Элементы игры
+const lessonsScreen = document.getElementById('lessons-screen');
+const lectureScreen = document.getElementById('lecture-screen');
 const gameScreen = document.getElementById('game-screen');
+
 const gameBoard = document.getElementById('game-board');
-const comboAlert = document.getElementById('combo-alert');
 const progressBar = document.getElementById('progress-bar');
-const gameTip = document.getElementById('game-tip');
+const progressText = document.getElementById('progress-text');
 const btnShuffle = document.getElementById('btn-shuffle');
 
-const statusPanel = document.getElementById('status-panel');
-const marquee = document.getElementById('marquee');
-const quizContainer = document.getElementById('quiz-container');
-const questionText = document.getElementById('question-text');
-const answersGrid = document.getElementById('answers-grid');
+const quizModal = document.getElementById('quiz-modal');
+const quizQuestion = document.getElementById('quiz-question');
+const quizAnswers = document.getElementById('quiz-answers');
 
-// Вход в игру "Компьютерные сети"
-document.querySelector('[data-target="networks"]').addEventListener('click', () => {
-    mainApp.style.display = 'none';
-    gameScreen.classList.remove('hidden');
-    startGame();
+// --- ИНИЦИАЛИЗАЦИЯ И НАВИГАЦИЯ ---
+
+// Клик по кнопке "Компьютерные сети" в главном меню
+document.getElementById('btn-computer-networks').addEventListener('click', () => {
+    renderLessonsList(selectLesson);
+    showScreen('lessons-screen');
 });
 
-// Выход из игры
+// Клик назад из списка уроков в главное меню
+document.getElementById('btn-lessons-back').addEventListener('click', () => {
+    showScreen('main-app');
+});
+
+// Клик назад из лекции в список уроков
+document.getElementById('btn-lecture-back').addEventListener('click', () => {
+    renderLessonsList(selectLesson); // перерисовываем, если вдруг обновился прогресс
+    showScreen('lessons-screen');
+});
+
+// Клик назад из игры (выход в меню)
 document.getElementById('btn-back').addEventListener('click', () => {
-    stopGameLoop();
+    stopQuizTimer();
     
-    // Чистим хвосты перед выходом
+    // Чистим все хвосты и блокировки
     gameBoard.classList.remove('board-locked');
     progressBar.classList.remove('timer-mode');
     closeQuizUI();
     
-    gameScreen.classList.add('hidden');
-    mainApp.style.display = 'flex';
+    renderLessonsList(selectLesson);
+    showScreen('lessons-screen');
 });
 
-// Событие кнопки перемешивания
-btnShuffle.addEventListener('click', () => {
-    if (isAnimating || isQuizActive) return; 
-    shuffleBoard();
+// Выбор урока из списка
+function selectLesson(lesson) {
+    currentLesson = lesson;
+    
+    // Заполняем экран лекции
+    document.getElementById('lecture-title').innerText = lesson.title;
+    document.getElementById('lecture-text').innerHTML = lesson.theory;
+    
+    showScreen('lecture-screen');
+}
+
+// Старт практики после прочтения лекции
+document.getElementById('btn-start-practice').addEventListener('click', () => {
+    if (!currentLesson) return;
+    showScreen('game-screen');
+    startGame();
 });
+
+// --- ЛОГИКА ИГРЫ "ТРИ В РЯД" ---
 
 function startGame() {
     progress = 0;
@@ -158,356 +100,312 @@ function startGame() {
     isQuizActive = false;
     selectedIndex = null;
     
-    // 1. Гарантированно убираем красный цвет со шкалы
-    progressBar.classList.remove('timer-mode'); 
+    // Гарантированно чистим стили шкалы и игрового поля при старте
+    progressBar.classList.remove('timer-mode');
     progressBar.style.width = '0%';
-
-    // 2. Снимаем блокировку и тусклость с игрового поля
     gameBoard.classList.remove('board-locked');
-
-    // 3. Сбрасываем интерфейс квиза на случайный запуск
-    closeQuizUI();
-
+    
     btnShuffle.disabled = false;
     updateProgressUI();
-    createValidBoard();
-    startGameLoop(); 
-}
-
-// Постоянный фоновый цикл убывания шкалы (идеальный баланс х2)
-function startGameLoop() {
-    stopGameLoop();
-    gameLoopInterval = setInterval(() => {
-        if (isQuizActive) {
-            // ФАЗА КВИЗА: ровно в 2 раза быстрее обычной игры — 3% в секунду (0.3% каждые 100мс)
-            progress = Math.max(0, progress - 0.3); 
-            updateProgressUI();
-
-            if (progress <= 0) {
-                onQuizTimeout();
-            }
-        } else {
-            // ФАЗА ИГРЫ: шкала плавно убывает со скоростью 1.5% в секунду (0.15% каждые 100мс)
-            if (progress > 0 && !isAnimating) {
-                progress = Math.max(0, progress - 0.15);
-                updateProgressUI();
-            }
-        }
-    }, 100);
-}
-
-function stopGameLoop() {
-    if (gameLoopInterval) {
-        clearInterval(gameLoopInterval);
-        gameLoopInterval = null;
-    }
-}
-
-// Создаем игровое поле без готовых совпадений на старте
-function createValidBoard() {
-    do {
-        board = [];
-        for (let i = 0; i < boardSize * boardSize; i++) {
-            const randIcon = icons[Math.floor(Math.random() * icons.length)];
-            board.push(randIcon);
-        }
-    } while (hasMatches().length > 0);
-
+    closeQuizUI();
+    
+    // Создаем поле
+    board = generateValidBoard();
     renderBoard();
 }
 
+// Отрисовка игрового поля
 function renderBoard() {
     gameBoard.innerHTML = '';
-    board.forEach((icon, index) => {
-        const tile = document.createElement('div');
-        tile.className = 'tile';
-        tile.innerText = icon;
-        tile.setAttribute('data-index', index);
-        tile.addEventListener('click', () => onTileClick(index));
-        gameBoard.appendChild(tile);
+    board.forEach((tile, index) => {
+        const tileEl = document.createElement('div');
+        tileEl.className = 'tile';
+        tileEl.innerText = tile;
+        tileEl.dataset.index = index;
+        
+        if (index === selectedIndex) {
+            tileEl.classList.add('selected');
+        }
+        
+        tileEl.addEventListener('click', () => handleTileClick(index));
+        gameBoard.appendChild(tileEl);
     });
 }
 
-// Клик по фишке
-function onTileClick(index) {
-    if (isAnimating || isQuizActive) return; 
+// Обработка клика по плитке
+async function handleTileClick(index) {
+    if (isAnimating || isQuizActive) return;
 
     if (selectedIndex === null) {
         selectedIndex = index;
-        gameBoard.children[index].classList.add('selected');
+        renderBoard();
     } else {
-        const firstIdx = selectedIndex;
-        const secondIdx = index;
-        gameBoard.children[firstIdx].classList.remove('selected');
+        const firstIndex = selectedIndex;
         selectedIndex = null;
 
-        if (isAdjacent(firstIdx, secondIdx)) {
-            swapAndCheck(firstIdx, secondIdx);
-        }
-    }
-}
-
-function isAdjacent(idx1, idx2) {
-    const r1 = Math.floor(idx1 / boardSize);
-    const c1 = idx1 % boardSize;
-    const r2 = Math.floor(idx2 / boardSize);
-    const c2 = idx2 % boardSize;
-    return (Math.abs(r1 - r2) + Math.abs(c1 - c2)) === 1;
-}
-
-function swapAndCheck(idx1, idx2) {
-    isAnimating = true;
-    swap(idx1, idx2);
-    renderBoard();
-
-    const matchedIndices = hasMatches();
-
-    if (matchedIndices.length > 0) {
-        combo = 1;
-        processMatches(matchedIndices);
-    } else {
-        setTimeout(() => {
-            swap(idx1, idx2);
+        if (firstIndex === index) {
             renderBoard();
+            return;
+        }
+
+        if (areNeighbors(firstIndex, index)) {
+            isAnimating = true;
+            // Пробуем поменять местами
+            swapTiles(firstIndex, index);
+            renderBoard();
+
+            // Ждем завершения анимации перемещения
+            await delay(150);
+
+            const matches = checkMatches(board);
+            if (matches.length > 0) {
+                // Если совпадение есть — убираем плитки
+                combo = 1;
+                await processMatches(matches);
+            } else {
+                // Если совпадений нет — возвращаем плитки обратно
+                swapTiles(firstIndex, index);
+                renderBoard();
+            }
             isAnimating = false;
-        }, 300);
-    }
-}
-
-function swap(i, j) {
-    const temp = board[i];
-    board[i] = board[j];
-    board[j] = temp;
-}
-
-function hasMatches() {
-    let matchSet = new Set();
-    // Горизонтали
-    for (let r = 0; r < boardSize; r++) {
-        let matchLen = 1;
-        for (let c = 0; c < boardSize; c++) {
-            const idx = r * boardSize + c;
-            const nextIdx = idx + 1;
-            if (c < boardSize - 1 && board[idx] === board[nextIdx]) {
-                matchLen++;
-            } else {
-                if (matchLen >= 3) {
-                    for (let i = 0; i < matchLen; i++) matchSet.add(idx - i);
-                }
-                matchLen = 1;
-            }
-        }
-    }
-    // Вертикали
-    for (let c = 0; c < boardSize; c++) {
-        let matchLen = 1;
-        for (let r = 0; r < boardSize; r++) {
-            const idx = r * boardSize + c;
-            const nextIdx = (r + 1) * boardSize + c;
-            if (r < boardSize - 1 && board[idx] === board[nextIdx]) {
-                matchLen++;
-            } else {
-                if (matchLen >= 3) {
-                    for (let i = 0; i < matchLen; i++) matchSet.add(idx - (i * boardSize));
-                }
-                matchLen = 1;
-            }
-        }
-    }
-    return Array.from(matchSet);
-}
-
-function processMatches(matchedIndices) {
-    const progressGained = matchedIndices.length * 4 * combo;
-    progress = Math.min(100, progress + progressGained);
-    updateProgressUI();
-
-    if (combo > 1) {
-        comboAlert.innerText = `COMBO X${combo}! (+${progressGained}%)`;
-    } else {
-        comboAlert.innerText = `+${progressGained}%`;
-    }
-
-    matchedIndices.forEach(idx => {
-        gameBoard.children[idx].classList.add('pop');
-    });
-
-    setTimeout(() => {
-        matchedIndices.forEach(idx => { board[idx] = null; });
-        dropTiles();
-        renderBoard();
-
-        setTimeout(() => {
-            const nextMatches = hasMatches();
-            if (nextMatches.length > 0) {
-                combo++;
-                processMatches(nextMatches);
-            } else {
-                comboAlert.innerText = '';
-                isAnimating = false;
-                
-                // Набрали 100% -> запускаем Вопрос!
-                if (progress >= 100) {
-                    launchQuiz();
-                }
-            }
-        }, 350);
-
-    }, 300);
-}
-
-function dropTiles() {
-    for (let c = 0; c < boardSize; c++) {
-        let columnTiles = [];
-        for (let r = 0; r < boardSize; r++) {
-            const idx = r * boardSize + c;
-            if (board[idx] !== null) columnTiles.push(board[idx]);
-        }
-        const missingCount = boardSize - columnTiles.length;
-        const newTiles = [];
-        for (let i = 0; i < missingCount; i++) {
-            newTiles.push(icons[Math.floor(Math.random() * icons.length)]);
-        }
-        const finalColumn = [...newTiles, ...columnTiles];
-        for (let r = 0; r < boardSize; r++) {
-            board[r * boardSize + c] = finalColumn[r];
-        }
-    }
-}
-
-// Перемешивание поля (честное, без халявных очков)
-function shuffleBoard() {
-    isAnimating = true;
-    btnShuffle.disabled = true;
-
-    // Плитки красиво сжимаются в центр
-    Array.from(gameBoard.children).forEach(tile => {
-        tile.style.transform = 'scale(0)';
-        tile.style.opacity = '0';
-    });
-
-    setTimeout(() => {
-        do {
-            for (let i = board.length - 1; i > 0; i--) {
-                const j = Math.floor(Math.random() * (i + 1));
-                const temp = board[i];
-                board[i] = board[j];
-                board[j] = temp;
-            }
-        } while (hasMatches().length > 0);
-
-        renderBoard();
-        
-        // Плавное поочередное раскрытие фишек волной
-        Array.from(gameBoard.children).forEach((tile, idx) => {
-            tile.style.transform = 'scale(0)';
-            tile.style.opacity = '0';
-            setTimeout(() => {
-                tile.style.transform = 'scale(1)';
-                tile.style.opacity = '1';
-            }, idx * 12); 
-        });
-
-        setTimeout(() => {
-            isAnimating = false;
-            btnShuffle.disabled = false;
-        }, 500);
-
-    }, 250);
-}
-
-// Универсальное обновление UI шкалы
-function updateProgressUI() {
-    progressBar.style.width = `${progress}%`;
-    
-    if (isQuizActive) {
-        gameTip.innerText = `ВНИМАНИЕ: ОТВЕТЬ БЫСТРЕЕ, ЧТОБЫ СОХРАНИТЬ ЗАРЯД!`;
-    } else {
-        gameTip.innerText = `Вопрос: ${currentQuestionIndex + 1}/5 | Зарядка: ${Math.floor(progress)}%`;
-    }
-}
-
-// ==========================================
-// 3. ИНТЕРАКТИВНЫЙ КВИЗ
-// ==========================================
-
-function launchQuiz() {
-    isQuizActive = true;
-    gameBoard.classList.add('board-locked'); 
-    btnShuffle.disabled = true; // Отключаем перемешивание во время квиза
-    
-    marquee.classList.add('hidden');
-    quizContainer.classList.remove('hidden');
-
-    const currentQuestion = questions[currentQuestionIndex];
-    questionText.innerText = currentQuestion.q;
-
-    // Генерируем ответы
-    answersGrid.innerHTML = '';
-    currentQuestion.a.forEach((ansText, index) => {
-        const btn = document.createElement('button');
-        btn.className = 'ans-btn';
-        btn.innerText = ansText;
-        btn.onclick = () => selectAnswer(index);
-        answersGrid.appendChild(btn);
-    });
-
-    progressBar.classList.add('timer-mode'); // Покраснение шкалы-таймера
-}
-
-// Обработка выбора ответа
-function selectAnswer(selectedIndex) {
-    const currentQuestion = questions[currentQuestionIndex];
-
-    if (selectedIndex === currentQuestion.correct) {
-        alert("✔️ Верно! Отличная скорость.");
-        currentQuestionIndex++;
-        
-        if (currentQuestionIndex >= questions.length) {
-            setTimeout(() => {
-                alert("🏆 Поздравляем! Лекция по протоколам пройдена на 100%!");
-                gameScreen.classList.add('hidden');
-                mainApp.style.display = 'flex';
-                stopGameLoop();
-            }, 600);
         } else {
-            // Сохраняем нерастраченный за секунды остаток шкалы!
-            resumeMainGameplay(false); 
+            // Если кликнули не на соседа — выбираем новую плитку
+            selectedIndex = index;
+            renderBoard();
         }
-    } else {
-        alert("❌ Ошибка! Неверный порт или протокол.");
-        penalizePlayer();
     }
 }
 
-// Время вышло
-function onQuizTimeout() {
-    alert("⏰ Время вышло! Заряд полностью исчерпан.");
-    penalizePlayer();
+// Меняет местами элементы в массиве
+function swapTiles(i1, i2) {
+    const temp = board[i1];
+    board[i1] = board[i2];
+    board[i2] = temp;
 }
 
-// Штраф за ошибку или таймаут
-function penalizePlayer() {
-    progress = 30; // Откат на 30% при неудаче
-    resumeMainGameplay(true);
-}
-
-// Возврат к игре "Три в ряд"
-function resumeMainGameplay(wasError) {
-    isQuizActive = false;
-    gameBoard.classList.remove('board-locked');
-    progressBar.classList.remove('timer-mode');
-    btnShuffle.disabled = false;
-    
-    if (!wasError && progress >= 100) {
-        progress = 90; // Защитная срезка, чтобы игра не зациклилась
-    }
-
-    closeQuizUI();
+// Обработка и удаление совпавших плиток
+async function processMatches(matches) {
+    // 1. Начисляем прогресс
+    const earnedProgress = matches.length * 2 * combo;
+    progress = Math.min(100, progress + earnedProgress);
     updateProgressUI();
+
+    // 2. Визуально подсвечиваем и удаляем
+    const tileEls = gameBoard.querySelectorAll('.tile');
+    matches.forEach(idx => {
+        tileEls[idx].classList.add('match');
+        board[idx] = ''; // Очищаем в массиве
+    });
+
+    await delay(200);
+
+    // 3. Сдвигаем плитки сверху вниз
+    applyGravity();
+    renderBoard();
+    await delay(150);
+
+    // 4. Заполняем пустоты сверху новыми плитками
+    fillEmptyTiles();
+    renderBoard();
+    await delay(150);
+
+    // 5. Проверяем новые совпадения (каскад/комбо)
+    const nextMatches = checkMatches(board);
+    if (nextMatches.length > 0) {
+        combo++;
+        await processMatches(nextMatches);
+    } else {
+        // Если каскад закончился, проверяем, пора ли запускать квиз
+        checkQuizTrigger();
+    }
 }
 
+// Физика падения плиток вниз
+function applyGravity() {
+    for (let c = 0; c < BOARD_SIZE; c++) {
+        let emptyRow = BOARD_SIZE - 1;
+        for (let r = BOARD_SIZE - 1; r >= 0; r--) {
+            const idx = r * BOARD_SIZE + c;
+            if (board[idx] !== '') {
+                if (emptyRow !== r) {
+                    board[emptyRow * BOARD_SIZE + c] = board[idx];
+                    board[idx] = '';
+                }
+                emptyRow--;
+            }
+        }
+    }
+}
+
+// Заполнение пустых клеток новыми плитками
+function fillEmptyTiles() {
+    for (let i = 0; i < board.length; i++) {
+        if (board[i] === '') {
+            board[i] = TILE_TYPES[Math.floor(Math.random() * TILE_TYPES.length)];
+        }
+    }
+}
+
+// Обновление шкалы прогресса вверху экрана
+function updateProgressUI() {
+    if (isQuizActive) return; // во время квиза шкалой управляет таймер
+    
+    progressBar.style.width = `${progress}%`;
+    progressText.innerText = `Вопрос: ${currentQuestionIndex}/5 | Зарядка: ${progress}%`;
+}
+
+// Кнопка принудительного перемешивания поля
+btnShuffle.addEventListener('click', () => {
+    if (isAnimating || isQuizActive) return;
+    board = generateValidBoard();
+    renderBoard();
+});
+
+// Вспомогательная задержка
+function delay(ms) {
+    return new Promise(resolve => setTimeout(resolve, ms));
+}
+
+// --- ЛОГИКА ВИКТОРИНЫ (КВИЗ) ---
+
+// Проверяем, набралось ли 100% для вызова вопроса
+function checkQuizTrigger() {
+    if (progress >= 100 && currentQuestionIndex < 5) {
+        startQuizRound();
+    }
+}
+
+// Запуск фазы ответа на вопрос
+function startQuizRound() {
+    isQuizActive = true;
+    btnShuffle.disabled = true;
+    
+    // Блокируем игровое поле и делаем его тусклым
+    gameBoard.classList.add('board-locked');
+
+    // Переводим шкалу прогресса в красный режим таймера
+    progressBar.classList.add('timer-mode');
+
+    // Получаем текущий вопрос из базы урока
+    const questionData = currentLesson.questions[currentQuestionIndex];
+    quizQuestion.innerText = questionData.q;
+    
+    // Рендерим варианты ответов
+    quizAnswers.innerHTML = '';
+    questionData.a.forEach((ans, idx) => {
+        const btn = document.createElement('button');
+        btn.className = 'btn-answer';
+        btn.innerText = ans;
+        btn.addEventListener('click', () => handleAnswerClick(idx));
+        quizAnswers.appendChild(btn);
+    });
+
+    // Показываем окно вопроса
+    quizModal.classList.remove('hidden');
+
+    // Запускаем таймер на 15 секунд
+    startQuizTimer();
+}
+
+// Таймер на ответ
+function startQuizTimer() {
+    stopQuizTimer();
+    
+    quizTimerValue = 100;
+    progressBar.style.width = '100%';
+    
+    const timeLimit = 15000; // 15 секунд
+    const intervalTime = 100; // обновляем каждые 0.1 сек
+    const step = (intervalTime / timeLimit) * 100;
+
+    timerInterval = setInterval(() => {
+        quizTimerValue -= step;
+        progressBar.style.width = `${Math.max(0, quizTimerValue)}%`;
+
+        if (quizTimerValue <= 0) {
+            stopQuizTimer();
+            // Время вышло = неверный ответ
+            handleAnswerResult(false);
+        }
+    }, intervalTime);
+}
+
+function stopQuizTimer() {
+    if (timerInterval) {
+        clearInterval(timerInterval);
+        timerInterval = null;
+    }
+}
+
+// Обработка клика по варианту ответа
+function handleAnswerClick(index) {
+    stopQuizTimer();
+    const isCorrect = index === currentLesson.questions[currentQuestionIndex].correct;
+    handleAnswerResult(isCorrect);
+}
+
+// Результат ответа (правильно / неправильно)
+function handleAnswerResult(isCorrect) {
+    const buttons = quizAnswers.querySelectorAll('.btn-answer');
+    const correctIdx = currentLesson.questions[currentQuestionIndex].correct;
+
+    // Подсвечиваем кнопки зеленым/красным
+    buttons.forEach((btn, idx) => {
+        btn.disabled = true;
+        if (idx === correctIdx) {
+            btn.classList.add('correct');
+        } else if (!isCorrect) {
+            btn.classList.add('wrong');
+        }
+    });
+
+    setTimeout(() => {
+        closeQuizUI();
+        
+        if (isCorrect) {
+            currentQuestionIndex++;
+            progress = 0; // Сбрасываем шкалу для накопления на следующий вопрос
+            
+            // Проверяем, пройден ли весь урок (все 5 вопросов)
+            if (currentQuestionIndex >= 5) {
+                handleLessonVictory();
+                return;
+            }
+        } else {
+            // При ошибке штрафуем шкалу прогресса на 40% и даём копить заново на тот же вопрос
+            progress = Math.max(0, progress - 40);
+        }
+
+        // Возвращаем игру в обычное русло
+        isQuizActive = false;
+        btnShuffle.disabled = false;
+        gameBoard.classList.remove('board-locked');
+        progressBar.classList.remove('timer-mode');
+        updateProgressUI();
+        
+        // На случай если после штрафа всё ещё осталось 100%
+        checkQuizTrigger();
+
+    }, 1500); // Показываем результат подсвеченных кнопок 1.5 секунды
+}
+
+// Действие при успешном прохождении всего урока
+function handleLessonVictory() {
+    alert(`🏆 Поздравляем! Лекция "${currentLesson.title}" успешно усвоена на 100%!`);
+    
+    // Разблокируем СЛЕДУЮЩИЙ урок
+    const currentLessonIndex = lessons.findIndex(l => l.id === currentLesson.id);
+    if (currentLessonIndex !== -1 && currentLessonIndex < lessons.length - 1) {
+        const nextLessonId = lessons[currentLessonIndex + 1].id;
+        unlockLesson(nextLessonId);
+    }
+
+    // Возвращаемся на экран выбора уроков
+    renderLessonsList(selectLesson);
+    showScreen('lessons-screen');
+}
+
+// Закрытие UI-модалки вопроса
 function closeQuizUI() {
-    quizContainer.classList.add('hidden');
-    marquee.classList.remove('hidden');
+    quizModal.classList.add('hidden');
 }
