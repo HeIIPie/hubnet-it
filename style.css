@@ -567,11 +567,11 @@ body {
     position: relative;
 }
 
+/* Блокировка поля без затемнения */
 .board-locked {
     pointer-events: none;
-    opacity: 0.4;
-    filter: grayscale(40%);
-    transition: all 0.3s ease;
+    opacity: 1;
+    filter: none;
 }
 
 .tile {

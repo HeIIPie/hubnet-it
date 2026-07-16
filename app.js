@@ -27,22 +27,28 @@ import { lessons } from './js/data/lessons.js';
 
 let currentLesson = null;
 let currentQuestionIndex = 0;
-let progress = 0; // Процент зарядки от 0 до 100
+let progress = 0;
 let board = [];
 let selectedTileIndex = null;
 let isBoardLocked = false;
 
-// НОВЫЕ ПЕРЕМЕННЫЕ ДЛЯ МЕХАНИКИ ЩИТОВ
+// Механика щитов и комбо
 let quizTimer = null;
 let quizTimeLeft = 15;
 let shields = 3;
-let combo = 0;
+let combo = 0; // Комбо за ответы на вопросы
+let matchCombo = 0; // Текущее комбо за цепочки совпадений
+let bestMatchCombo = 0; // Лучшее комбо за игру
 let correctAnswers = 0;
 let wrongAnswers = 0;
 let startTime = null;
 let elapsedTime = 0;
 
-// ФРАЗЫ ДЛЯ ПОРАЖЕНИЯ
+// Таймеры для уменьшения зарядки
+let drainTimer = null;
+let isDrainPaused = false;
+
+// Фразы для поражения
 const lossPhrases = [
     "💥 Сеть подверглась DDoS-атаке. Щиты не выдержали.",
     "🔥 Брандмауэр пробит. Злоумышленник проник в сеть.",
@@ -61,17 +67,15 @@ const lossPhrases = [
 // ============================================================
 
 document.addEventListener('DOMContentLoaded', () => {
-    // Инициализируем Telegram Web App
     initTelegram();
     
-    // Обновляем приветствие с именем пользователя
     const userName = getUserName();
-    const subtitle = document.querySelector('.main-subtitle');
-    if (subtitle && userName) {
-        subtitle.textContent = `Привет, ${userName}! Изучай технологии, играя в "Три в ряд"!`;
+    const greeting = document.getElementById('user-greeting');
+    if (greeting && userName) {
+        greeting.textContent = userName;
     }
 
-    // 1. Кнопка «Компьютерные сети» в главном меню
+    // Кнопка «Компьютерные сети»
     const btnNetworks = document.getElementById('btn-computer-networks');
     if (btnNetworks) {
         btnNetworks.addEventListener('click', () => {
@@ -80,15 +84,16 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    // 2. Назад из списка уроков в главное меню
+    // Назад из списка уроков
     const btnLessonsBack = document.getElementById('btn-lessons-back');
     if (btnLessonsBack) {
         btnLessonsBack.addEventListener('click', () => {
+            clearInterval(drainTimer);
             showScreen('main-app');
         });
     }
 
-    // 3. Назад из лекции в список уроков
+    // Назад из лекции
     const btnLectureBack = document.getElementById('btn-lecture-back');
     if (btnLectureBack) {
         btnLectureBack.addEventListener('click', () => {
@@ -96,7 +101,7 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    // 4. Кнопка «Начать практику» на экране лекции
+    // Кнопка «Начать практику»
     const btnStartPractice = document.getElementById('btn-start-practice');
     if (btnStartPractice) {
         btnStartPractice.addEventListener('click', () => {
@@ -104,16 +109,17 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    // 5. Кнопка «Выход» из игры в список уроков
+    // Кнопка «Выход» из игры
     const btnBack = document.getElementById('btn-back');
     if (btnBack) {
         btnBack.addEventListener('click', () => {
+            clearInterval(drainTimer);
             clearInterval(quizTimer);
             showScreen('lessons-screen');
         });
     }
 
-    // 6. Кнопка «Смешать» на игровом поле
+    // Кнопка «Смешать»
     const btnShuffle = document.getElementById('btn-shuffle');
     if (btnShuffle) {
         btnShuffle.addEventListener('click', () => {
@@ -124,7 +130,27 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    // Принудительно показываем главный экран при старте
+    // Кнопка профиля на главном экране
+    const btnProfile = document.getElementById('btn-profile');
+    if (btnProfile) {
+        btnProfile.addEventListener('click', () => {
+            // TODO: открыть профиль
+            alert('👤 Профиль: Уровень 1, XP: 0');
+        });
+    }
+
+    // ===== КНОПКА СБРОСА (ДЛЯ ТЕСТИРОВАНИЯ) =====
+    const btnReset = document.getElementById('btn-reset');
+    if (btnReset) {
+        btnReset.addEventListener('click', () => {
+            if (confirm('⚠️ Сбросить весь прогресс? Это удалит все сохранённые данные.')) {
+                localStorage.clear();
+                alert('✅ Прогресс сброшен! Обнови страницу.');
+                location.reload();
+            }
+        });
+    }
+
     showScreen('main-app');
 });
 
@@ -137,7 +163,6 @@ function selectLesson(lesson) {
     currentQuestionIndex = 0;
     progress = 0;
     
-    // Заполняем экран лекции данными
     const titleEl = document.getElementById('lecture-title');
     const textEl = document.getElementById('lecture-text');
     
@@ -148,19 +173,23 @@ function selectLesson(lesson) {
 }
 
 // ============================================================
-// 5. ЗАПУСК ИГРЫ "ТРИ В РЯД"
+// 5. ЗАПУСК ИГРЫ
 // ============================================================
 
 function startPractice() {
-    // Сбрасываем все переменные
     progress = 0;
     shields = 3;
     combo = 0;
+    matchCombo = 0;
+    bestMatchCombo = 0;
     correctAnswers = 0;
     wrongAnswers = 0;
     currentQuestionIndex = 0;
     startTime = Date.now();
     elapsedTime = 0;
+    isDrainPaused = false;
+    isBoardLocked = false;
+    selectedTileIndex = null;
     
     board = generateValidBoard();
     renderBoard();
@@ -168,10 +197,45 @@ function startPractice() {
     updateComboDisplay();
     updateProgressBar();
     showScreen('game-screen');
+    
+    // Запускаем постоянное уменьшение зарядки
+    startDrainTimer(2);
 }
 
 // ============================================================
-// 6. РЕНДЕРИНГ И ЛОГИКА ИГРОВОГО ПОЛЯ
+// 6. ТАЙМЕР УМЕНЬШЕНИЯ ЗАРЯДКИ
+// ============================================================
+
+function startDrainTimer(rate) {
+    clearInterval(drainTimer);
+    drainTimer = setInterval(() => {
+        if (isDrainPaused) return;
+        
+        // Уменьшаем зарядку на rate процентов в секунду
+        progress = Math.max(0, progress - rate);
+        updateProgressBar();
+        
+        // Если зарядка упала до 0, просто показываем 0%
+        if (progress <= 0) {
+            // Ничего не делаем, просто ждём пока игрок наберёт снова
+        }
+    }, 1000);
+}
+
+function stopDrainTimer() {
+    clearInterval(drainTimer);
+}
+
+function pauseDrain() {
+    isDrainPaused = true;
+}
+
+function resumeDrain() {
+    isDrainPaused = false;
+}
+
+// ============================================================
+// 7. РЕНДЕРИНГ И ЛОГИКА ИГРОВОГО ПОЛЯ
 // ============================================================
 
 function renderBoard() {
@@ -221,6 +285,7 @@ async function handleTileClick(index) {
             const matches = checkMatches(board);
 
             if (matches.length > 0) {
+                matchCombo = 0;
                 await processMatches(matches);
             } else {
                 await delay(200);
@@ -242,6 +307,17 @@ function swapTiles(idx1, idx2) {
 }
 
 async function processMatches(matches) {
+    matchCombo++;
+    
+    if (matchCombo > bestMatchCombo) {
+        bestMatchCombo = matchCombo;
+    }
+    
+    if (matchCombo > 1) {
+        showComboMessage(`🔥 Комбо x${matchCombo}!`);
+        updateComboDisplay(); // Обновляем отображение комбо
+    }
+    
     const tileElements = document.querySelectorAll('.tile');
     matches.forEach(idx => {
         if (tileElements[idx]) {
@@ -267,8 +343,10 @@ async function processMatches(matches) {
     if (nextMatches.length > 0) {
         await processMatches(nextMatches);
     } else {
+        matchCombo = 0;
         isBoardLocked = false;
         renderBoard();
+        updateComboDisplay();
 
         if (progress >= 100) {
             triggerQuizQuestion();
@@ -306,12 +384,12 @@ function updateProgressBar() {
         progressBar.style.width = `${progress}%`;
     }
     if (progressText) {
-        progressText.textContent = `Зарядка: ${progress}%`;
+        progressText.textContent = `Зарядка: ${Math.round(progress)}%`;
     }
 }
 
 // ============================================================
-// 7. ОТОБРАЖЕНИЕ ЩИТОВ И КОМБО
+// 8. ОТОБРАЖЕНИЕ ЩИТОВ И КОМБО
 // ============================================================
 
 function updateShieldsDisplay() {
@@ -333,8 +411,9 @@ function updateComboDisplay() {
     const comboDisplay = document.getElementById('combo-display');
     if (!comboDisplay) return;
     
-    if (combo > 0) {
-        comboDisplay.textContent = `🔥 Комбо: ${combo}`;
+    // Показываем текущее комбо за цепочки
+    if (matchCombo > 0) {
+        comboDisplay.textContent = `🔥 Комбо: x${matchCombo}`;
         comboDisplay.style.color = '#39ff14';
     } else {
         comboDisplay.textContent = '🔥 Комбо: 0';
@@ -343,16 +422,20 @@ function updateComboDisplay() {
 }
 
 // ============================================================
-// 8. КВИЗ (ВИКТОРИНА) — ОБНОВЛЕННАЯ ВЕРСИЯ
+// 9. КВИЗ
 // ============================================================
 
 function triggerQuizQuestion() {
+    // Ставим на паузу обычное уменьшение зарядки и запускаем уменьшение 4% в секунду
+    pauseDrain();
+    
     isBoardLocked = true;
     renderBoard();
 
     const questions = currentLesson.questions;
     
     if (currentQuestionIndex >= questions.length) {
+        resumeDrain();
         showWinScreen();
         return;
     }
@@ -368,7 +451,7 @@ function triggerQuizQuestion() {
 
     if (progressBar) {
         progressBar.classList.add('timer-mode');
-        progressBar.style.width = '100%';
+        progressBar.style.width = `${progress}%`;
     }
     quizTimeLeft = 15;
     if (progressText) {
@@ -388,11 +471,16 @@ function triggerQuizQuestion() {
 
     modal.classList.remove('hidden');
 
+    // Запускаем таймер вопроса с уменьшением 4% в секунду
     clearInterval(quizTimer);
     quizTimer = setInterval(() => {
         quizTimeLeft--;
+        // Уменьшаем зарядку на 4% в секунду во время вопроса
+        progress = Math.max(0, progress - 4);
+        updateProgressBar();
+        
         if (progressBar) {
-            progressBar.style.width = `${(quizTimeLeft / 15) * 100}%`;
+            progressBar.style.width = `${progress}%`;
         }
         if (progressText) {
             progressText.textContent = `Время на ответ: ${quizTimeLeft} сек`;
@@ -412,12 +500,11 @@ function handleAnswerClick(selectedIdx, correctIdx, clickedBtn) {
     buttons.forEach(btn => btn.disabled = true);
 
     if (selectedIdx === correctIdx) {
-        // ✅ ПРАВИЛЬНЫЙ ОТВЕТ
+        // ✅ ПРАВИЛЬНЫЙ ОТВЕТ — зарядка НЕ сбрасывается, просто закрываем окно
         clickedBtn.classList.add('correct');
         combo++;
         correctAnswers++;
         
-        // Сообщение о комбо
         if (combo >= 3) {
             const comboMessages = ['🔥 Отлично! Комбо x3!', '🔥🔥 Мощь! Комбо x4!', '🔥🔥🔥 НЕОСТАНОВИМ!'];
             const msg = comboMessages[Math.min(combo - 3, comboMessages.length - 1)];
@@ -427,8 +514,11 @@ function handleAnswerClick(selectedIdx, correctIdx, clickedBtn) {
         setTimeout(() => {
             closeQuizUI();
             currentQuestionIndex++;
-            progress = 0;
-            updateProgressBar();
+            
+            // Возвращаем обычное уменьшение зарядки 2% в секунду
+            resumeDrain();
+            startDrainTimer(2);
+            
             updateShieldsDisplay();
             updateComboDisplay();
             
@@ -441,13 +531,15 @@ function handleAnswerClick(selectedIdx, correctIdx, clickedBtn) {
         }, 1200);
         
     } else {
-        // ❌ НЕПРАВИЛЬНЫЙ ОТВЕТ
+        // ❌ НЕПРАВИЛЬНЫЙ ОТВЕТ — зарядка ОБНУЛЯЕТСЯ
         clickedBtn.classList.add('wrong');
         buttons[correctIdx].classList.add('correct');
         shields--;
         wrongAnswers++;
         combo = 0;
         
+        progress = 0;
+        updateProgressBar();
         updateShieldsDisplay();
         updateComboDisplay();
         
@@ -455,6 +547,7 @@ function handleAnswerClick(selectedIdx, correctIdx, clickedBtn) {
             closeQuizUI();
             
             if (shields <= 0) {
+                clearInterval(quizTimer);
                 showLossScreen();
                 return;
             }
@@ -464,8 +557,10 @@ function handleAnswerClick(selectedIdx, correctIdx, clickedBtn) {
                 : '⚠️ Ещё один щит пал! Осталось: ' + shields;
             alert(shieldMsg);
             
-            progress = 0;
-            updateProgressBar();
+            // Возвращаем обычное уменьшение зарядки 2% в секунду
+            resumeDrain();
+            startDrainTimer(2);
+            
             board = generateValidBoard();
             isBoardLocked = false;
             renderBoard();
@@ -483,17 +578,22 @@ function handleTimeOut(correctIdx) {
         closeQuizUI();
         shields--;
         combo = 0;
+        progress = 0;
+        updateProgressBar();
         updateShieldsDisplay();
         updateComboDisplay();
         
         if (shields <= 0) {
+            clearInterval(quizTimer);
             showLossScreen();
             return;
         }
         
         alert(`⏰ Время вышло! Осталось щитов: ${shields}`);
-        progress = 0;
-        updateProgressBar();
+        
+        resumeDrain();
+        startDrainTimer(2);
+        
         board = generateValidBoard();
         isBoardLocked = false;
         renderBoard();
@@ -512,19 +612,6 @@ function showComboMessage(text) {
     const msg = document.createElement('div');
     msg.className = 'combo-message';
     msg.textContent = text;
-    msg.style.cssText = `
-        position: absolute;
-        top: 50%;
-        left: 50%;
-        transform: translate(-50%, -50%);
-        font-size: 2rem;
-        font-weight: 700;
-        color: #39ff14;
-        text-shadow: 0 0 30px rgba(57, 255, 20, 0.8);
-        z-index: 50;
-        animation: comboPop 0.8s ease forwards;
-        pointer-events: none;
-    `;
     container.appendChild(msg);
     
     setTimeout(() => {
@@ -533,10 +620,14 @@ function showComboMessage(text) {
 }
 
 // ============================================================
-// 9. ЭКРАН ПОБЕДЫ
+// 10. ЭКРАН ПОБЕДЫ
 // ============================================================
 
 function showWinScreen() {
+    stopDrainTimer();
+    clearInterval(quizTimer);
+    resumeDrain();
+    
     const modal = document.getElementById('quiz-modal');
     if (modal) modal.classList.add('hidden');
     
@@ -573,14 +664,14 @@ function showWinScreen() {
             <h3 style="font-size: 2rem; color: #39ff14;">${resultText}</h3>
             <p style="color: #94a3b8; margin: 10px 0;">${resultSubtext}</p>
             <div style="display: flex; justify-content: space-around; padding: 10px 0; font-size: 0.9rem; color: #cbd5e1;">
-                <span>🔥 Комбо: ${combo}</span>
+                <span>🔥 Лучшее комбо: x${bestMatchCombo}</span>
                 <span>⏱️ ${timeStr}</span>
                 <span>🛡️ Щитов: ${shields}/3</span>
             </div>
             <div style="display: flex; flex-direction: column; gap: 10px; margin-top: 15px;">
-                <button onclick="restartLesson()" class="btn-answer" style="text-align: center; background: rgba(57, 255, 20, 0.2); border-color: #39ff14;">🔄 Пройти заново</button>
-                <button onclick="nextLesson()" class="btn-answer" style="text-align: center; background: rgba(59, 130, 246, 0.2); border-color: #3b82f6;">➡️ Следующий урок</button>
-                <button onclick="goToMenu()" class="btn-answer" style="text-align: center;">🏠 В меню</button>
+                <button onclick="window.restartLesson()" class="btn-answer" style="text-align: center; background: rgba(57, 255, 20, 0.2); border-color: #39ff14;">🔄 Пройти заново</button>
+                <button onclick="window.nextLesson()" class="btn-answer" style="text-align: center; background: rgba(59, 130, 246, 0.2); border-color: #3b82f6;">➡️ Следующий урок</button>
+                <button onclick="window.goToMenu()" class="btn-answer" style="text-align: center;">🏠 В меню</button>
             </div>
         `;
         modal.classList.remove('hidden');
@@ -588,10 +679,14 @@ function showWinScreen() {
 }
 
 // ============================================================
-// 10. ЭКРАН ПОРАЖЕНИЯ
+// 11. ЭКРАН ПОРАЖЕНИЯ
 // ============================================================
 
 function showLossScreen() {
+    stopDrainTimer();
+    clearInterval(quizTimer);
+    resumeDrain();
+    
     const modal = document.getElementById('quiz-modal');
     if (modal) modal.classList.add('hidden');
     
@@ -612,10 +707,11 @@ function showLossScreen() {
             <div style="display: flex; justify-content: space-around; padding: 10px 0; font-size: 0.9rem; color: #cbd5e1;">
                 <span>📊 Результат: ${correctAnswers}/5</span>
                 <span>⏱️ ${timeStr}</span>
+                <span>🔥 Лучшее комбо: x${bestMatchCombo}</span>
             </div>
             <div style="display: flex; flex-direction: column; gap: 10px; margin-top: 15px;">
-                <button onclick="restartLesson()" class="btn-answer" style="text-align: center; background: rgba(239, 68, 68, 0.2); border-color: #ef4444;">🔄 Пройти заново</button>
-                <button onclick="goToMenu()" class="btn-answer" style="text-align: center;">🏠 В меню</button>
+                <button onclick="window.restartLesson()" class="btn-answer" style="text-align: center; background: rgba(239, 68, 68, 0.2); border-color: #ef4444;">🔄 Пройти заново</button>
+                <button onclick="window.goToMenu()" class="btn-answer" style="text-align: center;">🏠 В меню</button>
             </div>
         `;
         modal.classList.remove('hidden');
@@ -623,49 +719,31 @@ function showLossScreen() {
 }
 
 // ============================================================
-// 11. ФУНКЦИИ ДЛЯ КНОПОК
-// ============================================================
-
-function restartLesson() {
-    closeQuizUI();
-    startPractice();
-}
-
-function nextLesson() {
-    closeQuizUI();
-    const currentIdx = lessons.findIndex(l => l.id === currentLesson.id);
-    if (currentIdx !== -1 && currentIdx + 1 < lessons.length) {
-        const nextLessonId = lessons[currentIdx + 1].id;
-        unlockLesson(nextLessonId);
-        const nextLesson = lessons[currentIdx + 1];
-        selectLesson(nextLesson);
-    } else {
-        alert('🎉 Ты прошёл все уроки! Возвращаемся в меню.');
-        showScreen('main-app');
-    }
-}
-
-function goToMenu() {
-    closeQuizUI();
-    showScreen('main-app');
-}
-
-// ============================================================
-// 12. ЭКСПОРТ ФУНКЦИЙ В ГЛОБАЛЬНУЮ ОБЛАСТЬ (ДЛЯ onclick)
+// 12. ЭКСПОРТ ФУНКЦИЙ В ГЛОБАЛЬНУЮ ОБЛАСТЬ
 // ============================================================
 
 window.restartLesson = function() {
     closeQuizUI();
+    stopDrainTimer();
+    clearInterval(quizTimer);
+    resumeDrain();
     startPractice();
 };
 
 window.goToMenu = function() {
     closeQuizUI();
+    stopDrainTimer();
+    clearInterval(quizTimer);
+    resumeDrain();
     showScreen('main-app');
 };
 
 window.nextLesson = function() {
     closeQuizUI();
+    stopDrainTimer();
+    clearInterval(quizTimer);
+    resumeDrain();
+    
     const currentIdx = lessons.findIndex(l => l.id === currentLesson.id);
     if (currentIdx !== -1 && currentIdx + 1 < lessons.length) {
         const nextLessonId = lessons[currentIdx + 1].id;
@@ -677,6 +755,11 @@ window.nextLesson = function() {
         showScreen('main-app');
     }
 };
+
+// ============================================================
+// 13. ВСПОМОГАТЕЛЬНЫЕ ФУНКЦИИ
+// ============================================================
+
 function delay(ms) {
     return new Promise(resolve => setTimeout(resolve, ms));
 }
