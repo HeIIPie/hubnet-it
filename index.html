@@ -10,89 +10,112 @@
 </head>
 <body>
 
-<!-- ЭКРАН 1: ГЛАВНОЕ МЕНЮ -->
-<div id="main-app" class="container">
-    <!-- Баннер -->
-    <div class="logo-container">
-        <img src="images/had-banner.png" alt="Hubnet Logo" class="main-logo">
+    <!-- ============================================================
+         ЭКРАН ЗАГРУЗКИ (LINUX STYLE)
+         ============================================================ -->
+    <div id="loading-screen" class="loading-container">
+        <div class="loading-terminal">
+            <div class="loading-header">
+                <span class="loading-dot red">●</span>
+                <span class="loading-dot yellow">●</span>
+                <span class="loading-dot green">●</span>
+                <span class="loading-title">HUB NET IT // BOOT</span>
+            </div>
+            <div class="loading-logs" id="loading-logs">
+                <!-- Строки добавляются через JS -->
+            </div>
+            <div class="loading-progress-container">
+                <div class="loading-progress-bar" id="loading-progress-bar"></div>
+                <div class="loading-progress-text" id="loading-progress-text">0%</div>
+            </div>
+            <div class="loading-status" id="loading-status">⏳ Booting system...</div>
+        </div>
     </div>
 
-    <!-- Кнопка профиля -->
-    <button id="btn-profile" class="btn-profile-main">
-        👤 Мой Профиль
-    </button>
-
-    <!-- Курсы -->
-    <div class="courses-section">
-        <div class="section-header">
-            <h2 class="section-title">Курсы</h2>
-            <button class="btn-see-all" id="btn-see-all">Смотреть все →</button>
+    <!-- ЭКРАН 1: ГЛАВНОЕ МЕНЮ -->
+    <div id="main-app" class="container">
+        <!-- Баннер -->
+        <div class="logo-container">
+            <img src="images/had-banner.png" alt="Hubnet Logo" class="main-logo">
         </div>
-        <div class="courses-grid-main" id="courses-grid">
-            <div class="course-card-main" id="btn-computer-networks">
-                <div class="course-icon">🌐</div>
-                <div class="course-info">
-                    <h3>Компьютерные сети</h3>
-                    <p>Изучи основы сетей от A до Z</p>
-                    <div class="course-progress">
-                        <div class="progress-bar-mini" id="course-progress-main" style="width: 0%"></div>
-                        <span class="progress-text-mini" id="course-progress-text">0%</span>
+
+        <!-- Кнопка профиля -->
+        <button id="btn-profile" class="btn-profile-main">
+            👤 Мой Профиль
+        </button>
+
+        <!-- Курсы -->
+        <div class="courses-section">
+            <div class="section-header">
+                <h2 class="section-title">Курсы</h2>
+                <button class="btn-see-all" id="btn-see-all">Смотреть все →</button>
+            </div>
+            <div class="courses-grid-main" id="courses-grid">
+                <div class="course-card-main" id="btn-computer-networks">
+                    <div class="course-icon">🌐</div>
+                    <div class="course-info">
+                        <h3>Компьютерные сети</h3>
+                        <p>Изучи основы сетей от A до Z</p>
+                        <div class="course-progress">
+                            <div class="progress-bar-mini" id="course-progress-main" style="width: 0%"></div>
+                            <span class="progress-text-mini" id="course-progress-text">0%</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="course-card-main locked">
+                    <div class="course-icon">📝</div>
+                    <div class="course-info">
+                        <h3>Квизы</h3>
+                        <p>Проверяй знания и получай XP</p>
+                        <span class="course-badge">СКОРО</span>
+                    </div>
+                </div>
+                <div class="course-card-main locked">
+                    <div class="course-icon">🗄️</div>
+                    <div class="course-info">
+                        <h3>Базы данных</h3>
+                        <p>SQL, проектирование и оптимизация</p>
+                        <span class="course-badge">СКОРО</span>
                     </div>
                 </div>
             </div>
-            <div class="course-card-main locked">
-                <div class="course-icon">📝</div>
-                <div class="course-info">
-                    <h3>Квизы</h3>
-                    <p>Проверяй знания и получай XP</p>
-                    <span class="course-badge">СКОРО</span>
-                </div>
-            </div>
-            <div class="course-card-main locked">
-                <div class="course-icon">🗄️</div>
-                <div class="course-info">
-                    <h3>Базы данных</h3>
-                    <p>SQL, проектирование и оптимизация</p>
-                    <span class="course-badge">СКОРО</span>
-                </div>
-            </div>
         </div>
-    </div>
 
-    <!-- Статистика (смайлы слева от цифр) -->
-    <div class="stats-row">
-        <div class="stat-item">
-            <span class="stat-number">🔥 7</span>
-            <span class="stat-label">Дней подряд</span>
+        <!-- Статистика -->
+        <div class="stats-row">
+            <div class="stat-item">
+                <span class="stat-number">🔥 7</span>
+                <span class="stat-label">Дней подряд</span>
+            </div>
+            <div class="stat-item">
+                <span class="stat-number">📚 1</span>
+                <span class="stat-label">Курсы</span>
+            </div>
+            <div class="stat-item">
+                <span class="stat-number">⭐ 0</span>
+                <span class="stat-label">Всего XP</span>
+            </div>
         </div>
-        <div class="stat-item">
-            <span class="stat-number">📚 1</span>
-            <span class="stat-label">Курсы</span>
-        </div>
-        <div class="stat-item">
-            <span class="stat-number">⭐ 0</span>
-            <span class="stat-label">Всего XP</span>
-        </div>
+
+        <!-- Кнопка сброса (для тестирования) -->
+        <button id="btn-reset" style="
+            position: fixed;
+            bottom: 80px;
+            right: 16px;
+            background: rgba(239, 68, 68, 0.85);
+            color: white;
+            border: 1px solid rgba(255,255,255,0.1);
+            padding: 10px 16px;
+            border-radius: 12px;
+            font-size: 0.75rem;
+            font-weight: 600;
+            cursor: pointer;
+            z-index: 999;
+            backdrop-filter: blur(8px);
+            box-shadow: 0 4px 20px rgba(239, 68, 68, 0.3);
+            letter-spacing: 0.3px;
+        ">🗑️ Сброс</button>
     </div>
-<!-- Кнопка сброса (для тестирования) -->
-<button id="btn-reset" style="
-    position: fixed;
-    bottom: 80px;
-    right: 16px;
-    background: rgba(239, 68, 68, 0.85);
-    color: white;
-    border: 1px solid rgba(255,255,255,0.1);
-    padding: 10px 16px;
-    border-radius: 12px;
-    font-size: 0.75rem;
-    font-weight: 600;
-    cursor: pointer;
-    z-index: 999;
-    backdrop-filter: blur(8px);
-    box-shadow: 0 4px 20px rgba(239, 68, 68, 0.3);
-    letter-spacing: 0.3px;
-">🗑️ Сброс</button>
-</div>
 
     <!-- ЭКРАН 2: ВЫБОР УРОКОВ -->
     <div id="lessons-screen" class="hidden container">
@@ -161,6 +184,134 @@
                 <h3 id="quiz-question">Загрузка вопроса...</h3>
                 <div id="quiz-answers" class="quiz-answers">
                     <!-- Кнопки ответов сгенерируются динамически -->
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ЭКРАН 5: ПРОФИЛЬ -->
+    <div id="profile-screen" class="hidden container">
+        <!-- Шапка -->
+        <div class="header">
+            <button id="btn-profile-back" class="btn-back">← Назад</button>
+            <h2>Мой Профиль</h2>
+            <div style="width: 60px;"></div>
+        </div>
+
+        <!-- Аватар + Имя -->
+        <div class="profile-header">
+            <div class="profile-avatar-large">👤</div>
+            <div>
+                <h2 id="profile-name" style="margin: 0; font-size: 1.4rem;">Друг</h2>
+                <p id="profile-username" style="margin: 2px 0; color: #94a3b8; font-size: 0.85rem;">@Друг_HubNet</p>
+                <span class="profile-rank">Новичок</span>
+            </div>
+        </div>
+
+        <!-- XP -->
+        <div class="profile-xp-section">
+            <div class="xp-bar-wrapper">
+                <div class="xp-bar">
+                    <div id="profile-xp-bar" class="xp-bar-fill" style="width: 0%;"></div>
+                </div>
+                <div class="xp-labels">
+                    <span id="profile-xp-current">0</span>
+                    <span id="profile-xp-next">800 XP</span>
+                </div>
+            </div>
+            <div class="xp-total">
+                <span class="xp-total-label">Общий XP</span>
+                <span class="xp-total-value" id="profile-total-xp">0</span>
+            </div>
+        </div>
+
+        <!-- Достижения -->
+        <div class="profile-section">
+            <h3 class="profile-section-title">🏆 Мои достижения</h3>
+            <div class="achievements-grid">
+                <div class="achievement-card unlocked">
+                    <span class="achievement-icon">🌐</span>
+                    <div>
+                        <div class="achievement-name">Сетевой старт</div>
+                        <div class="achievement-desc">Изучи основы компьютерных сетей</div>
+                    </div>
+                </div>
+                <div class="achievement-card locked">
+                    <span class="achievement-icon">🔒</span>
+                    <div>
+                        <div class="achievement-name">Безопасность превыше всего</div>
+                        <div class="achievement-desc">Пройди первые уроки по кибербезопасности</div>
+                    </div>
+                </div>
+                <div class="achievement-card locked">
+                    <span class="achievement-icon">🔒</span>
+                    <div>
+                        <div class="achievement-name">База знаний</div>
+                        <div class="achievement-desc">Изучи основы баз данных</div>
+                    </div>
+                </div>
+                <div class="achievement-card locked">
+                    <span class="achievement-icon">🔒</span>
+                    <div>
+                        <div class="achievement-name">Терминал</div>
+                        <div class="achievement-desc">Выполни первые командные задания</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Прогресс по курсам -->
+        <div class="profile-section">
+            <h3 class="profile-section-title">📊 Прогресс по курсам</h3>
+            <div class="course-progress-list">
+                <div class="course-progress-item">
+                    <span class="course-progress-name">🌐 Компьютерные сети</span>
+                    <div class="course-progress-track">
+                        <div class="course-progress-fill" style="width: 65%;"></div>
+                    </div>
+                    <span class="course-progress-percent">65%</span>
+                </div>
+                <div class="course-progress-item">
+                    <span class="course-progress-name">📝 Квизы</span>
+                    <div class="course-progress-track">
+                        <div class="course-progress-fill" style="width: 30%;"></div>
+                    </div>
+                    <span class="course-progress-percent">30%</span>
+                </div>
+                <div class="course-progress-item">
+                    <span class="course-progress-name">🗄️ Базы данных</span>
+                    <div class="course-progress-track">
+                        <div class="course-progress-fill" style="width: 10%;"></div>
+                    </div>
+                    <span class="course-progress-percent">10%</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Активность -->
+        <div class="profile-section">
+            <h3 class="profile-section-title">📅 Недавняя активность</h3>
+            <div class="activity-list">
+                <div class="activity-item">
+                    <div>
+                        <div class="activity-title">Завершён урок: Модель OSI</div>
+                        <div class="activity-time">Сегодня, 14:32</div>
+                    </div>
+                    <span class="activity-xp">+40 XP</span>
+                </div>
+                <div class="activity-item">
+                    <div>
+                        <div class="activity-title">Пройден квиз: Портлы и протоколы</div>
+                        <div class="activity-time">Сегодня, 13:21</div>
+                    </div>
+                    <span class="activity-xp">+30 XP</span>
+                </div>
+                <div class="activity-item">
+                    <div>
+                        <div class="activity-title">Изучен урок: SQL SELECT запросы</div>
+                        <div class="activity-time">Вчера, 21:45</div>
+                    </div>
+                    <span class="activity-xp">+25 XP</span>
                 </div>
             </div>
         </div>

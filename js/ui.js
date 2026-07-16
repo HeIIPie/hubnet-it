@@ -121,21 +121,20 @@ export function loadProgress() {
 }
 
 // ============================================================
-// 5. УПРАВЛЕНИЕ ЭКРАНАМИ
+// 5. УПРАВЛЕНИЕ ЭКРАНАМИ (ИСПРАВЛЕНО)
 // ============================================================
 
 /**
  * Менеджер экранов: показывает один нужный экран и гарантированно скрывает все остальные
  */
 export function showScreen(screenId) {
-    const screens = ['main-app', 'lessons-screen', 'lecture-screen', 'game-screen'];
+    const screens = ['main-app', 'lessons-screen', 'lecture-screen', 'game-screen', 'profile-screen'];
     
     screens.forEach(id => {
         const el = document.getElementById(id);
         if (el) {
             if (id === screenId) {
                 el.classList.remove('hidden');
-                // Корректируем отображение главного меню под flex-сетку
                 if (id === 'main-app') {
                     el.style.display = 'flex';
                 }
@@ -163,11 +162,10 @@ export function renderLessonsList(onSelectLesson) {
         return;
     }
     
-    listContainer.innerHTML = ''; // Очищаем старый список
+    listContainer.innerHTML = '';
     const unlocked = getUnlockedLessons();
     
     lessons.forEach((lesson, index) => {
-        // Урок закрыт, если это не первый урок и его ID нет в списке разблокированных
         const isLocked = index > 0 && !unlocked.includes(lesson.id);
         
         const card = document.createElement('div');

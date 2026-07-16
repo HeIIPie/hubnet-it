@@ -36,9 +36,9 @@ let isBoardLocked = false;
 let quizTimer = null;
 let quizTimeLeft = 15;
 let shields = 3;
-let combo = 0; // Комбо за ответы на вопросы
-let matchCombo = 0; // Текущее комбо за цепочки совпадений
-let bestMatchCombo = 0; // Лучшее комбо за игру
+let combo = 0;
+let matchCombo = 0;
+let bestMatchCombo = 0;
 let correctAnswers = 0;
 let wrongAnswers = 0;
 let startTime = null;
@@ -67,6 +67,8 @@ const lossPhrases = [
 // ============================================================
 
 document.addEventListener('DOMContentLoaded', () => {
+    console.log('🚀 Инициализация приложения...');
+    
     initTelegram();
     
     const userName = getUserName();
@@ -130,16 +132,25 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    // Кнопка профиля на главном экране
+    // ===== КНОПКА "МОЙ ПРОФИЛЬ" =====
     const btnProfile = document.getElementById('btn-profile');
     if (btnProfile) {
         btnProfile.addEventListener('click', () => {
-            // TODO: открыть профиль
-            alert('👤 Профиль: Уровень 1, XP: 0');
+            console.log('👤 Открываем профиль');
+            showScreen('profile-screen');
+            updateProfileData();
         });
     }
 
-    // ===== КНОПКА СБРОСА (ДЛЯ ТЕСТИРОВАНИЯ) =====
+    // ===== КНОПКА "НАЗАД" ИЗ ПРОФИЛЯ =====
+    const btnProfileBack = document.getElementById('btn-profile-back');
+    if (btnProfileBack) {
+        btnProfileBack.addEventListener('click', () => {
+            showScreen('main-app');
+        });
+    }
+
+    // ===== КНОПКА СБРОСА =====
     const btnReset = document.getElementById('btn-reset');
     if (btnReset) {
         btnReset.addEventListener('click', () => {
@@ -152,6 +163,10 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     showScreen('main-app');
+    console.log('✅ Инициализация завершена');
+
+    // Запускаем экран загрузки
+    startLoadingScreen();
 });
 
 // ============================================================
@@ -198,7 +213,6 @@ function startPractice() {
     updateProgressBar();
     showScreen('game-screen');
     
-    // Запускаем постоянное уменьшение зарядки
     startDrainTimer(2);
 }
 
@@ -210,15 +224,8 @@ function startDrainTimer(rate) {
     clearInterval(drainTimer);
     drainTimer = setInterval(() => {
         if (isDrainPaused) return;
-        
-        // Уменьшаем зарядку на rate процентов в секунду
         progress = Math.max(0, progress - rate);
         updateProgressBar();
-        
-        // Если зарядка упала до 0, просто показываем 0%
-        if (progress <= 0) {
-            // Ничего не делаем, просто ждём пока игрок наберёт снова
-        }
     }, 1000);
 }
 
@@ -315,7 +322,7 @@ async function processMatches(matches) {
     
     if (matchCombo > 1) {
         showComboMessage(`🔥 Комбо x${matchCombo}!`);
-        updateComboDisplay(); // Обновляем отображение комбо
+        updateComboDisplay();
     }
     
     const tileElements = document.querySelectorAll('.tile');
@@ -411,7 +418,6 @@ function updateComboDisplay() {
     const comboDisplay = document.getElementById('combo-display');
     if (!comboDisplay) return;
     
-    // Показываем текущее комбо за цепочки
     if (matchCombo > 0) {
         comboDisplay.textContent = `🔥 Комбо: x${matchCombo}`;
         comboDisplay.style.color = '#39ff14';
@@ -426,7 +432,6 @@ function updateComboDisplay() {
 // ============================================================
 
 function triggerQuizQuestion() {
-    // Ставим на паузу обычное уменьшение зарядки и запускаем уменьшение 4% в секунду
     pauseDrain();
     
     isBoardLocked = true;
@@ -471,11 +476,9 @@ function triggerQuizQuestion() {
 
     modal.classList.remove('hidden');
 
-    // Запускаем таймер вопроса с уменьшением 4% в секунду
     clearInterval(quizTimer);
     quizTimer = setInterval(() => {
         quizTimeLeft--;
-        // Уменьшаем зарядку на 4% в секунду во время вопроса
         progress = Math.max(0, progress - 4);
         updateProgressBar();
         
@@ -500,7 +503,6 @@ function handleAnswerClick(selectedIdx, correctIdx, clickedBtn) {
     buttons.forEach(btn => btn.disabled = true);
 
     if (selectedIdx === correctIdx) {
-        // ✅ ПРАВИЛЬНЫЙ ОТВЕТ — зарядка НЕ сбрасывается, просто закрываем окно
         clickedBtn.classList.add('correct');
         combo++;
         correctAnswers++;
@@ -515,7 +517,6 @@ function handleAnswerClick(selectedIdx, correctIdx, clickedBtn) {
             closeQuizUI();
             currentQuestionIndex++;
             
-            // Возвращаем обычное уменьшение зарядки 2% в секунду
             resumeDrain();
             startDrainTimer(2);
             
@@ -531,7 +532,6 @@ function handleAnswerClick(selectedIdx, correctIdx, clickedBtn) {
         }, 1200);
         
     } else {
-        // ❌ НЕПРАВИЛЬНЫЙ ОТВЕТ — зарядка ОБНУЛЯЕТСЯ
         clickedBtn.classList.add('wrong');
         buttons[correctIdx].classList.add('correct');
         shields--;
@@ -557,7 +557,6 @@ function handleAnswerClick(selectedIdx, correctIdx, clickedBtn) {
                 : '⚠️ Ещё один щит пал! Осталось: ' + shields;
             alert(shieldMsg);
             
-            // Возвращаем обычное уменьшение зарядки 2% в секунду
             resumeDrain();
             startDrainTimer(2);
             
@@ -757,7 +756,164 @@ window.nextLesson = function() {
 };
 
 // ============================================================
-// 13. ВСПОМОГАТЕЛЬНЫЕ ФУНКЦИИ
+// 13. ОБНОВЛЕНИЕ ДАННЫХ ПРОФИЛЯ
+// ============================================================
+
+function updateProfileData() {
+    try {
+        const userName = getUserName() || 'Denic';
+        
+        const nameEl = document.getElementById('profile-name');
+        const usernameEl = document.getElementById('profile-username');
+        if (nameEl) nameEl.textContent = userName;
+        if (usernameEl) usernameEl.textContent = `@${userName}_HubNet`;
+        
+        const xp = parseInt(localStorage.getItem('hubnet_xp')) || 0;
+        const totalXp = xp;
+        
+        const currentEl = document.getElementById('profile-xp-current');
+        const totalEl = document.getElementById('profile-total-xp');
+        const barEl = document.getElementById('profile-xp-bar');
+        const nextEl = document.getElementById('profile-xp-next');
+        
+        if (currentEl) currentEl.textContent = xp;
+        if (totalEl) totalEl.textContent = totalXp;
+        
+        const nextLevelXp = 800;
+        const progressPercent = Math.min((xp / nextLevelXp) * 100, 100);
+        if (barEl) barEl.style.width = `${progressPercent}%`;
+        if (nextEl) nextEl.textContent = `${nextLevelXp} XP`;
+        
+        console.log('✅ Данные профиля обновлены');
+    } catch (e) {
+        console.warn('⚠️ Ошибка при обновлении профиля:', e);
+    }
+}
+
+// ============================================================
+// 14. ЭКРАН ЗАГРУЗКИ (LINUX STYLE)
+// ============================================================
+
+const bootMessages = [
+    // Ядро
+    { text: '[    0.000000] Linux version 6.8.0-hubnet (root@hubnet-build) (gcc-13.2.0) #1 SMP PREEMPT_DYNAMIC', type: '' },
+    { text: '[    0.000000] Command line: BOOT_IMAGE=/vmlinuz-hubnet root=UUID=hubnet-it ro quiet', type: '' },
+    { text: '[    0.000000] KERNEL: HubNet IT v1.0.3 loaded successfully', type: 'highlight' },
+    { text: '[    0.000000] CPU: x86_64, 4 cores, 8 threads', type: '' },
+    { text: '[    0.000000] Memory: 4096MB available, 3072MB free', type: '' },
+    // Инициализация сети
+    { text: '[    0.842133] NET: Registered protocol family 2', type: '' },
+    { text: '[    0.842201] IP: Initializing TCP/IP stack', type: 'highlight' },
+    { text: '[    0.842301] TCP: Hash tables configured (established 16384 bind 8192)', type: '' },
+    { text: '[    0.842401] UDP: Loaded successfully', type: 'ok' },
+    { text: '[    0.842501] ICMP: Protocol ready', type: '' },
+    // Устройства
+    { text: '[    1.124567] eth0: Link is up, 1000Mbps full-duplex', type: 'ok' },
+    { text: '[    1.124678] eth0: MAC address 00:1a:2b:3c:4d:5e', type: '' },
+    { text: '[    1.124789] IPv6: ADDRCONF(NETDEV_CHANGE): eth0: link becomes ready', type: '' },
+    { text: '[    1.124890] NET: Registered protocol family 10', type: '' },
+    // DNS и службы
+    { text: '[    1.456234] DNS: Resolver initialized, 8.8.8.8, 1.1.1.1', type: 'ok' },
+    { text: '[    1.456345] DHCP: Client started, requesting lease...', type: '' },
+    { text: '[    1.456456] DHCP: Lease obtained (192.168.1.100/24, gateway 192.168.1.1)', type: 'ok' },
+    { text: '[    1.456567] NTP: Synchronized with time.google.com', type: '' },
+    // Безопасность
+    { text: '[    1.789012] Firewall: nftables initialized', type: '' },
+    { text: '[    1.789123] Firewall: Rules loaded (incoming: drop, outgoing: allow)', type: 'warn' },
+    { text: '[    1.789234] SELinux: Disabled (permissive mode)', type: '' },
+    { text: '[    1.789345] AppArmor: Profiles loaded: 2', type: '' },
+    // Базы данных и сервисы
+    { text: '[    2.123456] PostgreSQL: Starting service (v16.2)...', type: '' },
+    { text: '[    2.123567] PostgreSQL: Database "hubnet_courses" initialized', type: 'ok' },
+    { text: '[    2.123678] Redis: Service ready, 10 connections available', type: '' },
+    { text: '[    2.123789] Nginx: Web server started on port 443', type: '' },
+    // Приложение
+    { text: '[    2.456789] HubNet API: Endpoints registered (v1, v2)', type: '' },
+    { text: '[    2.456890] HubNet API: JWT authentication enabled', type: '' },
+    { text: '[    2.456901] WebSocket: Connection established, wss://hubnet.it', type: '' },
+    { text: '[    2.457012] Static: Assets loaded from /var/www/hubnet', type: '' },
+    // Завершение
+    { text: '[    2.789123] HubNet IT: All services ready', type: 'highlight' },
+    { text: '[    2.789234] System: Boot completed in 2.79s', type: 'ok' },
+    { text: '[    2.789345] Welcome to HubNet IT Academy!', type: 'highlight' },
+];
+
+const statusMessages = [
+    '⏳ Loading kernel...',
+    '⏳ Initializing network stack...',
+    '⏳ Configuring DNS and DHCP...',
+    '⏳ Setting up firewall...',
+    '⏳ Starting services...',
+    '⏳ Loading application assets...',
+    '✅ System ready!'
+];
+
+function startLoadingScreen() {
+    const loadingScreen = document.getElementById('loading-screen');
+    const logsContainer = document.getElementById('loading-logs');
+    const progressText = document.getElementById('loading-progress-text');
+    const statusText = document.getElementById('loading-status');
+    
+    if (!loadingScreen) return;
+
+    let lineIndex = 0;
+    let statusIndex = 0;
+    const totalLines = bootMessages.length;
+
+    function addLogLine() {
+        if (lineIndex >= totalLines) {
+            clearInterval(lineInterval);
+            
+            if (statusText) {
+                statusText.textContent = '✅ System ready!';
+                statusText.style.color = '#22c55e';
+            }
+            
+            setTimeout(() => {
+                loadingScreen.classList.add('hidden');
+            }, 800);
+            
+            return;
+        }
+
+        const msg = bootMessages[lineIndex];
+        const line = document.createElement('div');
+        line.className = 'log-line';
+        
+        let colorClass = '';
+        if (msg.type === 'highlight') colorClass = 'highlight';
+        else if (msg.type === 'warn') colorClass = 'warn';
+        else if (msg.type === 'ok') colorClass = 'ok';
+        else if (msg.type === 'err') colorClass = 'err';
+        
+        if (colorClass) {
+            line.innerHTML = `<span class="${colorClass}">${msg.text}</span>`;
+        } else {
+            line.textContent = msg.text;
+        }
+        
+        logsContainer.appendChild(line);
+        logsContainer.scrollTop = logsContainer.scrollHeight;
+        
+        lineIndex++;
+        
+        const progress = Math.round((lineIndex / totalLines) * 100);
+        if (progressText) {
+            progressText.textContent = progress + '%';
+        }
+        
+        const newStatusIndex = Math.min(Math.floor(progress / 17), statusMessages.length - 1);
+        if (newStatusIndex !== statusIndex && statusText) {
+            statusIndex = newStatusIndex;
+            statusText.textContent = statusMessages[statusIndex];
+        }
+    }
+
+    const lineInterval = setInterval(addLogLine, 80);
+}
+
+// ============================================================
+// 15. ВСПОМОГАТЕЛЬНЫЕ ФУНКЦИИ
 // ============================================================
 
 function delay(ms) {
