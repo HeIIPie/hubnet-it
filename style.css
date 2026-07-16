@@ -502,23 +502,8 @@ body {
     gap: 10px;
 }
 
-.btn-shuffle {
-    background: rgba(255, 255, 255, 0.05);
-    border: 1px solid rgba(255, 255, 255, 0.1);
-    color: #fff;
-    padding: 6px 12px;
-    border-radius: 8px;
-    font-size: 0.8rem;
-    cursor: pointer;
-    transition: all 0.2s;
-}
-
-.btn-shuffle:hover:not(:disabled) {
-    background: rgba(255, 255, 255, 0.15);
-}
-
 .progress-container {
-    margin-bottom: 12px;
+    margin-bottom: 8px;
     width: 100%;
     flex-shrink: 0;
 }
@@ -565,6 +550,7 @@ body {
     aspect-ratio: 1/1;
     box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
     position: relative;
+    flex-shrink: 0;
 }
 
 .board-locked {
@@ -585,6 +571,7 @@ body {
     user-select: none;
     transition: transform 0.15s ease, background-color 0.15s ease, box-shadow 0.15s ease;
     aspect-ratio: 1/1;
+    position: relative;
 }
 
 .tile:hover {
@@ -598,10 +585,176 @@ body {
     transform: scale(0.95);
 }
 
+/* Эффекты плиток при совпадении */
 .tile.match {
-    transform: scale(0);
-    opacity: 0;
-    transition: all 0.2s ease-out;
+    animation: matchPop 0.4s ease forwards;
+    z-index: 10;
+}
+
+@keyframes matchPop {
+    0% { 
+        transform: scale(1); 
+        opacity: 1;
+        box-shadow: 0 0 0px rgba(57, 255, 20, 0);
+    }
+    30% { 
+        transform: scale(1.4); 
+        opacity: 1;
+        box-shadow: 0 0 40px rgba(57, 255, 20, 0.8), 0 0 80px rgba(57, 255, 20, 0.4);
+        background: rgba(57, 255, 20, 0.3);
+    }
+    60% {
+        transform: scale(1.2);
+        opacity: 0.8;
+        box-shadow: 0 0 60px rgba(57, 255, 20, 0.6);
+    }
+    100% { 
+        transform: scale(0); 
+        opacity: 0;
+        box-shadow: 0 0 0px rgba(57, 255, 20, 0);
+    }
+}
+
+.tile.match-combo {
+    animation: matchComboPop 0.5s ease forwards;
+    z-index: 10;
+}
+
+@keyframes matchComboPop {
+    0% { 
+        transform: scale(1); 
+        opacity: 1;
+        box-shadow: 0 0 0px rgba(255, 215, 0, 0);
+    }
+    25% { 
+        transform: scale(1.6); 
+        opacity: 1;
+        box-shadow: 0 0 60px rgba(255, 215, 0, 0.9), 0 0 120px rgba(255, 215, 0, 0.5);
+        background: rgba(255, 215, 0, 0.25);
+    }
+    50% {
+        transform: scale(1.3);
+        opacity: 0.9;
+        box-shadow: 0 0 80px rgba(255, 215, 0, 0.7);
+    }
+    100% { 
+        transform: scale(0); 
+        opacity: 0;
+        box-shadow: 0 0 0px rgba(255, 215, 0, 0);
+    }
+}
+
+.tile.match::after {
+    content: '✦';
+    position: absolute;
+    font-size: 1.2rem;
+    color: #39ff14;
+    animation: sparkle 0.5s ease forwards;
+    pointer-events: none;
+}
+
+@keyframes sparkle {
+    0% { 
+        transform: translate(0, 0) scale(0.5); 
+        opacity: 1;
+    }
+    100% { 
+        transform: translate(var(--tx, 20px), var(--ty, -30px)) scale(0); 
+        opacity: 0;
+    }
+}
+
+.tile.match:nth-child(1)::after { --tx: 15px; --ty: -25px; }
+.tile.match:nth-child(2)::after { --tx: -15px; --ty: -20px; }
+.tile.match:nth-child(3)::after { --tx: 20px; --ty: -30px; }
+.tile.match:nth-child(4)::after { --tx: -20px; --ty: -15px; }
+.tile.match:nth-child(5)::after { --tx: 10px; --ty: -35px; }
+.tile.match:nth-child(6)::after { --tx: -10px; --ty: -25px; }
+
+.game-board.combo-active {
+    animation: boardGlow 0.5s ease;
+}
+
+@keyframes boardGlow {
+    0% { box-shadow: 0 0 20px rgba(57, 255, 20, 0); }
+    30% { box-shadow: 0 0 60px rgba(57, 255, 20, 0.3), 0 0 120px rgba(57, 255, 20, 0.1); }
+    100% { box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5); }
+}
+
+/* ============================================================
+   НОВАЯ КНОПКА СМЕШАТЬ (ВНИЗУ)
+   ============================================================ */
+
+.btn-shuffle-new {
+    background: linear-gradient(135deg, #3b82f6, #1d4ed8);
+    color: #ffffff;
+    border: none;
+    padding: 14px 20px;
+    border-radius: 14px;
+    font-size: 1rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    box-shadow: 0 4px 20px rgba(59, 130, 246, 0.3);
+    letter-spacing: 0.5px;
+    width: 100%;
+}
+
+.btn-shuffle-new:hover:not(:disabled) {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 30px rgba(59, 130, 246, 0.5);
+}
+
+.btn-shuffle-new:active {
+    transform: scale(0.97);
+}
+
+.btn-shuffle-new:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+    transform: none;
+    box-shadow: none;
+}
+
+/* ============================================================
+   ИНДИКАТОРЫ ВОПРОСОВ
+   ============================================================ */
+
+.q-indicator {
+    font-size: 1.4rem;
+    transition: all 0.3s ease;
+    cursor: default;
+    display: inline-block;
+}
+
+.q-indicator.answered-correct {
+    color: #22c55e !important;
+    transform: scale(1.1);
+}
+
+.q-indicator.answered-wrong {
+    color: #ef4444 !important;
+    transform: scale(0.9);
+}
+
+.q-indicator.current {
+    animation: pulse 0.6s ease-in-out infinite;
+}
+
+@keyframes pulse {
+    0%, 100% { transform: scale(1); }
+    50% { transform: scale(1.3); }
+}
+
+/* ============================================================
+   ПЛАВАЮЩИЕ СООБЩЕНИЯ
+   ============================================================ */
+
+@keyframes floatMessage {
+    0% { opacity: 0; transform: translate(-50%, -50%) scale(0.8); }
+    20% { opacity: 1; transform: translate(-50%, -50%) scale(1); }
+    80% { opacity: 1; transform: translate(-50%, -50%) scale(1); }
+    100% { opacity: 0; transform: translate(-50%, -50%) scale(0.9) translateY(-20px); }
 }
 
 /* ============================================================
@@ -1117,7 +1270,7 @@ body {
     width: 0%;
     background: linear-gradient(90deg, #39ff14, #60efff);
     border-radius: 3px;
-    animation: progressFill 3.5s ease forwards;
+    animation: progressFill 5s ease forwards;
     box-shadow: 0 0 20px rgba(57, 255, 20, 0.2);
 }
 

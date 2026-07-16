@@ -48,6 +48,11 @@ let elapsedTime = 0;
 let drainTimer = null;
 let isDrainPaused = false;
 
+// Очки и таймер
+let score = 0;
+let timerInterval = null;
+let seconds = 0;
+
 // Фразы для поражения
 const lossPhrases = [
     "💥 Сеть подверглась DDoS-атаке. Щиты не выдержали.",
@@ -117,6 +122,7 @@ document.addEventListener('DOMContentLoaded', () => {
         btnBack.addEventListener('click', () => {
             clearInterval(drainTimer);
             clearInterval(quizTimer);
+            stopTimer();
             showScreen('lessons-screen');
         });
     }
@@ -205,12 +211,19 @@ function startPractice() {
     isDrainPaused = false;
     isBoardLocked = false;
     selectedTileIndex = null;
+    score = 0;
+    seconds = 0;
+    
+    resetQuestionsIndicators();
     
     board = generateValidBoard();
     renderBoard();
     updateShieldsDisplay();
     updateComboDisplay();
     updateProgressBar();
+    updateScoreDisplay();
+    updateQuestionsIndicators();
+    startTimer();
     showScreen('game-screen');
     
     startDrainTimer(2);
@@ -242,7 +255,73 @@ function resumeDrain() {
 }
 
 // ============================================================
-// 7. РЕНДЕРИНГ И ЛОГИКА ИГРОВОГО ПОЛЯ
+// 7. ОЧКИ И ТАЙМЕР
+// ============================================================
+
+function updateScoreDisplay() {
+    const scoreEl = document.getElementById('score-display');
+    if (scoreEl) scoreEl.textContent = `🏆 ${score} очков`;
+}
+
+function startTimer() {
+    clearInterval(timerInterval);
+    timerInterval = setInterval(() => {
+        seconds++;
+        const mins = String(Math.floor(seconds / 60)).padStart(2, '0');
+        const secs = String(seconds % 60).padStart(2, '0');
+        const timerEl = document.getElementById('timer-display');
+        if (timerEl) timerEl.textContent = `⏱️ ${mins}:${secs}`;
+    }, 1000);
+}
+
+function stopTimer() {
+    clearInterval(timerInterval);
+}
+
+// ============================================================
+// 8. ИНДИКАТОРЫ ВОПРОСОВ
+// ============================================================
+
+function updateQuestionsIndicators() {
+    const indicators = document.querySelectorAll('.q-indicator');
+    indicators.forEach((el, index) => {
+        el.classList.remove('current');
+        if (index === currentQuestionIndex && 
+            !el.classList.contains('answered-correct') && 
+            !el.classList.contains('answered-wrong')) {
+            el.classList.add('current');
+        }
+    });
+}
+
+function markQuestionResult(index, isCorrect) {
+    const indicators = document.querySelectorAll('.q-indicator');
+    if (indicators[index]) {
+        indicators[index].classList.remove('current');
+        if (isCorrect) {
+            indicators[index].textContent = '✅';
+            indicators[index].style.color = '#22c55e';
+            indicators[index].classList.add('answered-correct');
+        } else {
+            indicators[index].textContent = '❌';
+            indicators[index].style.color = '#ef4444';
+            indicators[index].classList.add('answered-wrong');
+        }
+        updateQuestionsIndicators();
+    }
+}
+
+function resetQuestionsIndicators() {
+    const indicators = document.querySelectorAll('.q-indicator');
+    indicators.forEach(el => {
+        el.textContent = '❓';
+        el.style.color = '#ffffff';
+        el.classList.remove('answered-correct', 'answered-wrong', 'current');
+    });
+}
+
+// ============================================================
+// 9. РЕНДЕРИНГ И ЛОГИКА ИГРОВОГО ПОЛЯ
 // ============================================================
 
 function renderBoard() {
@@ -323,16 +402,30 @@ async function processMatches(matches) {
     if (matchCombo > 1) {
         showComboMessage(`🔥 Комбо x${matchCombo}!`);
         updateComboDisplay();
+        const boardEl = document.getElementById('game-board');
+        if (boardEl) {
+            boardEl.classList.add('combo-active');
+            setTimeout(() => boardEl.classList.remove('combo-active'), 500);
+        }
     }
     
     const tileElements = document.querySelectorAll('.tile');
-    matches.forEach(idx => {
+    matches.forEach((idx, i) => {
         if (tileElements[idx]) {
-            tileElements[idx].classList.add('match');
+            if (matchCombo > 1) {
+                tileElements[idx].classList.add('match-combo');
+            } else {
+                tileElements[idx].classList.add('match');
+            }
+            tileElements[idx].style.animationDelay = `${i * 0.05}s`;
         }
     });
 
-    await delay(250);
+    await delay(400);
+
+    const points = matches.length * 10 * Math.min(matchCombo, 5);
+    score += points;
+    updateScoreDisplay();
 
     progress = Math.min(100, progress + matches.length * 5);
     updateProgressBar();
@@ -396,7 +489,7 @@ function updateProgressBar() {
 }
 
 // ============================================================
-// 8. ОТОБРАЖЕНИЕ ЩИТОВ И КОМБО
+// 10. ОТОБРАЖЕНИЕ БАТАРЕЙ И КОМБО
 // ============================================================
 
 function updateShieldsDisplay() {
@@ -406,9 +499,9 @@ function updateShieldsDisplay() {
     let display = '';
     for (let i = 0; i < 3; i++) {
         if (i < shields) {
-            display += '🛡️ ';
+            display += '🔋 ';
         } else {
-            display += '⬜ ';
+            display += '🪫 ';
         }
     }
     shieldContainer.textContent = display.trim();
@@ -418,8 +511,8 @@ function updateComboDisplay() {
     const comboDisplay = document.getElementById('combo-display');
     if (!comboDisplay) return;
     
-    if (matchCombo > 0) {
-        comboDisplay.textContent = `🔥 Комбо: x${matchCombo}`;
+    if (bestMatchCombo > 0) {
+        comboDisplay.textContent = `🔥 Лучшее комбо: x${bestMatchCombo}`;
         comboDisplay.style.color = '#39ff14';
     } else {
         comboDisplay.textContent = '🔥 Комбо: 0';
@@ -428,7 +521,7 @@ function updateComboDisplay() {
 }
 
 // ============================================================
-// 9. КВИЗ
+// 11. КВИЗ
 // ============================================================
 
 function triggerQuizQuestion() {
@@ -475,6 +568,7 @@ function triggerQuizQuestion() {
     });
 
     modal.classList.remove('hidden');
+    updateQuestionsIndicators();
 
     clearInterval(quizTimer);
     quizTimer = setInterval(() => {
@@ -506,6 +600,10 @@ function handleAnswerClick(selectedIdx, correctIdx, clickedBtn) {
         clickedBtn.classList.add('correct');
         combo++;
         correctAnswers++;
+        markQuestionResult(currentQuestionIndex, true);
+        
+        score += 100;
+        updateScoreDisplay();
         
         if (combo >= 3) {
             const comboMessages = ['🔥 Отлично! Комбо x3!', '🔥🔥 Мощь! Комбо x4!', '🔥🔥🔥 НЕОСТАНОВИМ!'];
@@ -522,6 +620,7 @@ function handleAnswerClick(selectedIdx, correctIdx, clickedBtn) {
             
             updateShieldsDisplay();
             updateComboDisplay();
+            updateQuestionsIndicators();
             
             if (currentQuestionIndex < currentLesson.questions.length) {
                 isBoardLocked = false;
@@ -537,6 +636,7 @@ function handleAnswerClick(selectedIdx, correctIdx, clickedBtn) {
         shields--;
         wrongAnswers++;
         combo = 0;
+        markQuestionResult(currentQuestionIndex, false);
         
         progress = 0;
         updateProgressBar();
@@ -553,9 +653,9 @@ function handleAnswerClick(selectedIdx, correctIdx, clickedBtn) {
             }
             
             const shieldMsg = shields === 2 
-                ? '❌ Атака прошла! Осталось щитов: ' + shields 
-                : '⚠️ Ещё один щит пал! Осталось: ' + shields;
-            alert(shieldMsg);
+                ? '❌ Атака прошла! Осталось батарей: ' + shields 
+                : '⚠️ Ещё одна батарея разряжена! Осталось: ' + shields;
+            showFloatingMessage(shieldMsg, 'warning');
             
             resumeDrain();
             startDrainTimer(2);
@@ -563,6 +663,7 @@ function handleAnswerClick(selectedIdx, correctIdx, clickedBtn) {
             board = generateValidBoard();
             isBoardLocked = false;
             renderBoard();
+            updateQuestionsIndicators();
             
         }, 1500);
     }
@@ -588,7 +689,7 @@ function handleTimeOut(correctIdx) {
             return;
         }
         
-        alert(`⏰ Время вышло! Осталось щитов: ${shields}`);
+        showFloatingMessage(`⏰ Время вышло! Осталось батарей: ${shields}`, 'warning');
         
         resumeDrain();
         startDrainTimer(2);
@@ -618,39 +719,87 @@ function showComboMessage(text) {
     }, 1000);
 }
 
+function showFloatingMessage(text, type = 'info') {
+    const container = document.getElementById('game-screen');
+    if (!container) return;
+    
+    const oldMsg = container.querySelector('.floating-message');
+    if (oldMsg) oldMsg.remove();
+    
+    const msg = document.createElement('div');
+    msg.className = `floating-message ${type}`;
+    msg.textContent = text;
+    msg.style.cssText = `
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        background: rgba(0, 0, 0, 0.85);
+        color: ${type === 'warning' ? '#fbbf24' : '#39ff14'};
+        padding: 12px 24px;
+        border-radius: 12px;
+        font-size: 0.9rem;
+        font-weight: 600;
+        z-index: 60;
+        border: 1px solid ${type === 'warning' ? 'rgba(251, 191, 36, 0.3)' : 'rgba(57, 255, 20, 0.3)'};
+        backdrop-filter: blur(4px);
+        animation: floatMessage 1.5s ease forwards;
+        pointer-events: none;
+        text-align: center;
+        max-width: 80%;
+    `;
+    container.appendChild(msg);
+    
+    setTimeout(() => {
+        msg.remove();
+    }, 1500);
+}
+
 // ============================================================
-// 10. ЭКРАН ПОБЕДЫ
+// 12. ЭКРАН ПОБЕДЫ
 // ============================================================
 
 function showWinScreen() {
     stopDrainTimer();
     clearInterval(quizTimer);
     resumeDrain();
+    stopTimer();
+    
+    const currentIdx = lessons.findIndex(l => l.id === currentLesson.id);
+    if (currentIdx !== -1 && currentIdx + 1 < lessons.length) {
+        const nextLessonId = lessons[currentIdx + 1].id;
+        unlockLesson(nextLessonId);
+        console.log(`🔓 Урок ${nextLessonId} разблокирован!`);
+        renderLessonsList(selectLesson);
+    }
+    
+    const xp = correctAnswers * 50;
+    localStorage.setItem('hubnet_xp', xp);
     
     const modal = document.getElementById('quiz-modal');
     if (modal) modal.classList.add('hidden');
     
     const elapsed = Math.floor((Date.now() - startTime) / 1000);
     const minutes = Math.floor(elapsed / 60);
-    const seconds = elapsed % 60;
-    const timeStr = `${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
+    const secondsEl = elapsed % 60;
+    const timeStr = `${String(minutes).padStart(2, '0')}:${String(secondsEl).padStart(2, '0')}`;
     
     let resultText = '';
     let resultSubtext = '';
-    const score = correctAnswers;
+    const scoreResult = correctAnswers;
     const total = currentLesson.questions.length;
     
-    if (score === total) {
+    if (scoreResult === total) {
         resultText = '🌟 ИДЕАЛЬНО! 5/5';
         resultSubtext = 'Ты настоящий сетевик! Угроза нейтрализована полностью!';
-    } else if (score >= 4) {
+    } else if (scoreResult >= 4) {
         resultText = '🔥 ОТЛИЧНО! 4/5';
         resultSubtext = 'Отличная работа! Ты понял основное, но есть нюансы.';
-    } else if (score >= 3) {
+    } else if (scoreResult >= 3) {
         resultText = '💪 ХОРОШО! 3/5';
         resultSubtext = 'Основа тебе понятна, стоит перечитать лекцию.';
     } else {
-        resultText = '📖 НЕПЛОХО! ' + score + '/5';
+        resultText = '📖 НЕПЛОХО! ' + scoreResult + '/5';
         resultSubtext = 'Рекомендуем перечитать лекцию и попробовать заново.';
     }
     
@@ -665,7 +814,8 @@ function showWinScreen() {
             <div style="display: flex; justify-content: space-around; padding: 10px 0; font-size: 0.9rem; color: #cbd5e1;">
                 <span>🔥 Лучшее комбо: x${bestMatchCombo}</span>
                 <span>⏱️ ${timeStr}</span>
-                <span>🛡️ Щитов: ${shields}/3</span>
+                <span>🔋 Батарей: ${shields}/3</span>
+                <span>🏆 Очки: ${score}</span>
             </div>
             <div style="display: flex; flex-direction: column; gap: 10px; margin-top: 15px;">
                 <button onclick="window.restartLesson()" class="btn-answer" style="text-align: center; background: rgba(57, 255, 20, 0.2); border-color: #39ff14;">🔄 Пройти заново</button>
@@ -678,13 +828,14 @@ function showWinScreen() {
 }
 
 // ============================================================
-// 11. ЭКРАН ПОРАЖЕНИЯ
+// 13. ЭКРАН ПОРАЖЕНИЯ
 // ============================================================
 
 function showLossScreen() {
     stopDrainTimer();
     clearInterval(quizTimer);
     resumeDrain();
+    stopTimer();
     
     const modal = document.getElementById('quiz-modal');
     if (modal) modal.classList.add('hidden');
@@ -692,8 +843,8 @@ function showLossScreen() {
     const randomPhrase = lossPhrases[Math.floor(Math.random() * lossPhrases.length)];
     const elapsed = Math.floor((Date.now() - startTime) / 1000);
     const minutes = Math.floor(elapsed / 60);
-    const seconds = elapsed % 60;
-    const timeStr = `${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
+    const secondsEl = elapsed % 60;
+    const timeStr = `${String(minutes).padStart(2, '0')}:${String(secondsEl).padStart(2, '0')}`;
     
     const modalContent = document.querySelector('.quiz-content');
     if (modalContent) {
@@ -718,7 +869,7 @@ function showLossScreen() {
 }
 
 // ============================================================
-// 12. ЭКСПОРТ ФУНКЦИЙ В ГЛОБАЛЬНУЮ ОБЛАСТЬ
+// 14. ЭКСПОРТ ФУНКЦИЙ В ГЛОБАЛЬНУЮ ОБЛАСТЬ
 // ============================================================
 
 window.restartLesson = function() {
@@ -726,6 +877,7 @@ window.restartLesson = function() {
     stopDrainTimer();
     clearInterval(quizTimer);
     resumeDrain();
+    stopTimer();
     startPractice();
 };
 
@@ -734,6 +886,7 @@ window.goToMenu = function() {
     stopDrainTimer();
     clearInterval(quizTimer);
     resumeDrain();
+    stopTimer();
     showScreen('main-app');
 };
 
@@ -742,11 +895,10 @@ window.nextLesson = function() {
     stopDrainTimer();
     clearInterval(quizTimer);
     resumeDrain();
+    stopTimer();
     
     const currentIdx = lessons.findIndex(l => l.id === currentLesson.id);
     if (currentIdx !== -1 && currentIdx + 1 < lessons.length) {
-        const nextLessonId = lessons[currentIdx + 1].id;
-        unlockLesson(nextLessonId);
         const nextLesson = lessons[currentIdx + 1];
         selectLesson(nextLesson);
     } else {
@@ -756,7 +908,7 @@ window.nextLesson = function() {
 };
 
 // ============================================================
-// 13. ОБНОВЛЕНИЕ ДАННЫХ ПРОФИЛЯ
+// 15. ОБНОВЛЕНИЕ ДАННЫХ ПРОФИЛЯ
 // ============================================================
 
 function updateProfileData() {
@@ -791,56 +943,58 @@ function updateProfileData() {
 }
 
 // ============================================================
-// 14. ЭКРАН ЗАГРУЗКИ (LINUX STYLE)
+// 16. ЭКРАН ЗАГРУЗКИ (LINUX STYLE)
 // ============================================================
 
 const bootMessages = [
-    // Ядро
     { text: '[    0.000000] Linux version 6.8.0-hubnet (root@hubnet-build) (gcc-13.2.0) #1 SMP PREEMPT_DYNAMIC', type: '' },
     { text: '[    0.000000] Command line: BOOT_IMAGE=/vmlinuz-hubnet root=UUID=hubnet-it ro quiet', type: '' },
     { text: '[    0.000000] KERNEL: HubNet IT v1.0.3 loaded successfully', type: 'highlight' },
     { text: '[    0.000000] CPU: x86_64, 4 cores, 8 threads', type: '' },
     { text: '[    0.000000] Memory: 4096MB available, 3072MB free', type: '' },
-    // Инициализация сети
+    { text: '[    0.000000] PCI: Initializing PCIe devices', type: '' },
+    { text: '[    0.000000] ACPI: Advanced Configuration and Power Interface v6.5', type: '' },
     { text: '[    0.842133] NET: Registered protocol family 2', type: '' },
     { text: '[    0.842201] IP: Initializing TCP/IP stack', type: 'highlight' },
     { text: '[    0.842301] TCP: Hash tables configured (established 16384 bind 8192)', type: '' },
     { text: '[    0.842401] UDP: Loaded successfully', type: 'ok' },
     { text: '[    0.842501] ICMP: Protocol ready', type: '' },
-    // Устройства
+    { text: '[    0.842601] NET: Registered protocol family 1', type: '' },
     { text: '[    1.124567] eth0: Link is up, 1000Mbps full-duplex', type: 'ok' },
     { text: '[    1.124678] eth0: MAC address 00:1a:2b:3c:4d:5e', type: '' },
     { text: '[    1.124789] IPv6: ADDRCONF(NETDEV_CHANGE): eth0: link becomes ready', type: '' },
     { text: '[    1.124890] NET: Registered protocol family 10', type: '' },
-    // DNS и службы
+    { text: '[    1.124901] IPv6: ADDRCONF(NETDEV_CHANGE): lo: link becomes ready', type: '' },
     { text: '[    1.456234] DNS: Resolver initialized, 8.8.8.8, 1.1.1.1', type: 'ok' },
     { text: '[    1.456345] DHCP: Client started, requesting lease...', type: '' },
     { text: '[    1.456456] DHCP: Lease obtained (192.168.1.100/24, gateway 192.168.1.1)', type: 'ok' },
     { text: '[    1.456567] NTP: Synchronized with time.google.com', type: '' },
-    // Безопасность
+    { text: '[    1.456678] DNS: Resolver cache initialized', type: '' },
     { text: '[    1.789012] Firewall: nftables initialized', type: '' },
     { text: '[    1.789123] Firewall: Rules loaded (incoming: drop, outgoing: allow)', type: 'warn' },
     { text: '[    1.789234] SELinux: Disabled (permissive mode)', type: '' },
     { text: '[    1.789345] AppArmor: Profiles loaded: 2', type: '' },
-    // Базы данных и сервисы
+    { text: '[    1.789456] Security: Kernel hardening enabled', type: '' },
     { text: '[    2.123456] PostgreSQL: Starting service (v16.2)...', type: '' },
     { text: '[    2.123567] PostgreSQL: Database "hubnet_courses" initialized', type: 'ok' },
     { text: '[    2.123678] Redis: Service ready, 10 connections available', type: '' },
     { text: '[    2.123789] Nginx: Web server started on port 443', type: '' },
-    // Приложение
+    { text: '[    2.123890] Nginx: SSL certificate loaded', type: '' },
     { text: '[    2.456789] HubNet API: Endpoints registered (v1, v2)', type: '' },
     { text: '[    2.456890] HubNet API: JWT authentication enabled', type: '' },
     { text: '[    2.456901] WebSocket: Connection established, wss://hubnet.it', type: '' },
     { text: '[    2.457012] Static: Assets loaded from /var/www/hubnet', type: '' },
-    // Завершение
+    { text: '[    2.457123] Cache: Redis cache warming up...', type: '' },
     { text: '[    2.789123] HubNet IT: All services ready', type: 'highlight' },
     { text: '[    2.789234] System: Boot completed in 2.79s', type: 'ok' },
     { text: '[    2.789345] Welcome to HubNet IT Academy!', type: 'highlight' },
+    { text: '[    2.789456] Press START to begin your journey...', type: '' },
 ];
 
 const statusMessages = [
     '⏳ Loading kernel...',
-    '⏳ Initializing network stack...',
+    '⏳ Initializing hardware...',
+    '⏳ Setting up network stack...',
     '⏳ Configuring DNS and DHCP...',
     '⏳ Setting up firewall...',
     '⏳ Starting services...',
@@ -868,11 +1022,12 @@ function startLoadingScreen() {
             if (statusText) {
                 statusText.textContent = '✅ System ready!';
                 statusText.style.color = '#22c55e';
+                statusText.style.animation = 'none';
             }
             
             setTimeout(() => {
                 loadingScreen.classList.add('hidden');
-            }, 800);
+            }, 600);
             
             return;
         }
@@ -898,23 +1053,23 @@ function startLoadingScreen() {
         
         lineIndex++;
         
-        const progress = Math.round((lineIndex / totalLines) * 100);
+        const progress = Math.min(Math.round((lineIndex / totalLines) * 100), 100);
         if (progressText) {
             progressText.textContent = progress + '%';
         }
         
-        const newStatusIndex = Math.min(Math.floor(progress / 17), statusMessages.length - 1);
+        const newStatusIndex = Math.min(Math.floor(progress / 14), statusMessages.length - 1);
         if (newStatusIndex !== statusIndex && statusText) {
             statusIndex = newStatusIndex;
             statusText.textContent = statusMessages[statusIndex];
         }
     }
 
-    const lineInterval = setInterval(addLogLine, 80);
+    const lineInterval = setInterval(addLogLine, intervalTime);
 }
 
 // ============================================================
-// 15. ВСПОМОГАТЕЛЬНЫЕ ФУНКЦИИ
+// 17. ВСПОМОГАТЕЛЬНЫЕ ФУНКЦИИ
 // ============================================================
 
 function delay(ms) {
