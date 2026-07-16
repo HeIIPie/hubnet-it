@@ -10,33 +10,76 @@
 </head>
 <body>
 
-    <!-- ЭКРАН 1: ГЛАВНОЕ МЕНЮ -->
-    <div id="main-app" class="container">
-        <!-- Баннер -->
-        <div class="logo-container">
-            <img src="images/had-banner.png" alt="Hubnet Logo" class="main-logo">
+<!-- ЭКРАН 1: ГЛАВНОЕ МЕНЮ -->
+<div id="main-app" class="container">
+    <!-- Баннер -->
+    <div class="logo-container">
+        <img src="images/had-banner.png" alt="Hubnet Logo" class="main-logo">
+    </div>
+
+    <!-- Кнопка профиля -->
+    <button id="btn-profile" class="btn-profile-main">
+        👤 Мой Профиль
+    </button>
+
+    <!-- Курсы -->
+    <div class="courses-section">
+        <div class="section-header">
+            <h2 class="section-title">Курсы</h2>
+            <button class="btn-see-all" id="btn-see-all">Смотреть все →</button>
         </div>
-        
-        <!-- Кнопка профиля -->
-        <button id="btn-profile" class="btn-profile-main">
-            👤 Мой Профиль
-        </button>
-        
-        <!-- Разделитель -->
-        <div class="divider"></div>
-        
-        <!-- Кнопки направлений -->
-        <div class="menu-buttons">
-            <button id="btn-computer-networks" class="btn-menu">🔌 Компьютерные сети</button>
-            <button id="btn-quizzes" class="btn-menu locked-menu" disabled>📝 Квизы (Скоро)</button>
-            <button id="btn-coming-soon" class="btn-menu locked-menu" disabled>🔒 Базы данных (Скоро)</button>
+        <div class="courses-grid-main" id="courses-grid">
+            <div class="course-card-main" id="btn-computer-networks">
+                <div class="course-icon">🌐</div>
+                <div class="course-info">
+                    <h3>Компьютерные сети</h3>
+                    <p>Изучи основы сетей от A до Z</p>
+                    <div class="course-progress">
+                        <div class="progress-bar-mini" id="course-progress-main" style="width: 0%"></div>
+                        <span class="progress-text-mini" id="course-progress-text">0%</span>
+                    </div>
+                </div>
+            </div>
+            <div class="course-card-main locked">
+                <div class="course-icon">📝</div>
+                <div class="course-info">
+                    <h3>Квизы</h3>
+                    <p>Проверяй знания и получай XP</p>
+                    <span class="course-badge">СКОРО</span>
+                </div>
+            </div>
+            <div class="course-card-main locked">
+                <div class="course-icon">🗄️</div>
+                <div class="course-info">
+                    <h3>Базы данных</h3>
+                    <p>SQL, проектирование и оптимизация</p>
+                    <span class="course-badge">СКОРО</span>
+                </div>
+            </div>
         </div>
     </div>
+
+    <!-- Статистика (смайлы слева от цифр) -->
+    <div class="stats-row">
+        <div class="stat-item">
+            <span class="stat-number">🔥 7</span>
+            <span class="stat-label">Дней подряд</span>
+        </div>
+        <div class="stat-item">
+            <span class="stat-number">📚 1</span>
+            <span class="stat-label">Курсы</span>
+        </div>
+        <div class="stat-item">
+            <span class="stat-number">⭐ 0</span>
+            <span class="stat-label">Всего XP</span>
+        </div>
+    </div>
+</div>
 
     <!-- ЭКРАН 2: ВЫБОР УРОКОВ -->
     <div id="lessons-screen" class="hidden container">
         <div class="header">
-            <button id="btn-lessons-back" class="btn-back">← Меню</button>
+            <button id="btn-lessons-back" class="btn-back">← Назад</button>
             <h2>Компьютерные сети</h2>
         </div>
         
@@ -71,11 +114,13 @@
                 <button id="btn-shuffle" class="btn-shuffle">🔄 Смешать</button>
             </div>
         </div>
-    <!-- Щиты и Комбо -->
-    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
-        <div id="shields-display" style="font-size: 1.4rem; letter-spacing: 2px;">🛡️ 🛡️ 🛡️</div>
+
+        <!-- Щиты и Комбо -->
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+            <div id="shields-display" style="font-size: 1.4rem; letter-spacing: 2px;">🛡️ 🛡️ 🛡️</div>
             <div id="combo-display" style="font-size: 0.9rem; color: #64748b;">🔥 Комбо: 0</div>
-    </div>
+        </div>
+
         <!-- Шкала прогресса -->
         <div class="progress-container">
             <div class="progress-bar-wrapper">
