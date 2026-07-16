@@ -859,7 +859,7 @@ function startLoadingScreen() {
     let lineIndex = 0;
     let statusIndex = 0;
     const totalLines = bootMessages.length;
-    const intervalTime = Math.floor(4000 / totalLines);
+    const intervalTime = Math.floor(5000 / totalLines);
 
     function addLogLine() {
         if (lineIndex >= totalLines) {
