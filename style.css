@@ -972,7 +972,7 @@ body {
     position: fixed;
     top: 0;
     left: 0;
-    width: 100%;
+    width: 100vw;
     height: 100vh;
     background: #030712;
     display: flex;
@@ -980,8 +980,9 @@ body {
     align-items: center;
     z-index: 9999;
     animation: fadeOut 0.6s ease forwards;
-    animation-delay: 5.5s;
+    animation-delay: 4.5s;
     animation-fill-mode: forwards;
+    padding: 20px;
 }
 
 @keyframes fadeOut {
@@ -990,15 +991,18 @@ body {
 }
 
 .loading-terminal {
-    width: 92%;
-    max-width: 560px;
+    width: 100%;
+    max-width: 800px;
+    height: 90vh;
+    max-height: 600px;
     background: #0b0f19;
     border: 1px solid rgba(57, 255, 20, 0.15);
     border-radius: 12px;
-    padding: 16px 20px 20px 20px;
-    box-shadow: 0 0 60px rgba(57, 255, 20, 0.03);
+    padding: 20px 24px 24px 24px;
+    box-shadow: 0 0 80px rgba(57, 255, 20, 0.04);
     font-family: 'Courier New', monospace;
-    max-height: 80vh;
+    display: flex;
+    flex-direction: column;
 }
 
 .loading-header {
