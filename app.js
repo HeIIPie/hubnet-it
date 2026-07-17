@@ -429,7 +429,6 @@ async function processMatches(matches) {
         }
     });
 
-    // ОПТИМИЗАЦИЯ: уменьшена задержка
     await delay(250);
 
     const points = matches.length * 10 * Math.min(matchCombo, 5);
@@ -439,6 +438,15 @@ async function processMatches(matches) {
     progress = Math.min(100, progress + matches.length * 5);
     updateProgressBar();
 
+    // ===== ЕСЛИ ДОСТИГЛИ 100% — СТАВИМ ФЛАГ =====
+    if (progress >= 100) {
+        progress = 100;
+        updateProgressBar();
+        isQuestionPending = true;
+        console.log('⚡ Зарядка 100%! Вопрос ждёт окончания комбо...');
+    }
+    // ===========================================
+
     matches.forEach(idx => {
         board[idx] = null;
     });
@@ -446,7 +454,6 @@ async function processMatches(matches) {
     dropTiles();
     renderBoard();
     
-    // ОПТИМИЗАЦИЯ: уменьшена задержка
     await delay(200);
 
     const nextMatches = checkMatches(board);
@@ -458,6 +465,7 @@ async function processMatches(matches) {
         renderBoard();
         updateComboDisplay();
 
+        // === ЕСЛИ ВОПРОС ЖДАЛ — ПОКАЗЫВАЕМ ===
         if (isQuestionPending) {
             isQuestionPending = false;
             console.log('✅ Комбо закончились! Показываем вопрос...');
