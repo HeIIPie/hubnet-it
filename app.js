@@ -31,6 +31,7 @@ let progress = 0;
 let board = [];
 let selectedTileIndex = null;
 let isBoardLocked = false;
+let isQuestionPending = false;
 
 // Механика щитов и комбо
 let quizTimer = null;
@@ -194,7 +195,7 @@ function selectLesson(lesson) {
 }
 
 // ============================================================
-// 5. ЗАПУСК ИГРЫ
+// 5. ЗАПУСК ИГРЫ (ПОЛНЫЙ СБРОС)
 // ============================================================
 
 function startPractice() {
@@ -213,11 +214,16 @@ function startPractice() {
     selectedTileIndex = null;
     score = 0;
     seconds = 0;
+    isQuestionPending = false;
     
     resetQuestionsIndicators();
     
+    const modal = document.getElementById('quiz-modal');
+    if (modal) modal.classList.add('hidden');
+    
     board = generateValidBoard();
     renderBoard();
+    
     updateShieldsDisplay();
     updateComboDisplay();
     updateProgressBar();
@@ -227,6 +233,8 @@ function startPractice() {
     showScreen('game-screen');
     
     startDrainTimer(2);
+    
+    console.log('✅ startPractice: все переменные сброшены, currentQuestionIndex =', currentQuestionIndex);
 }
 
 // ============================================================
@@ -430,6 +438,15 @@ async function processMatches(matches) {
     progress = Math.min(100, progress + matches.length * 5);
     updateProgressBar();
 
+    // ===== ЕСЛИ ДОСТИГЛИ 100% — СТАВИМ ФЛАГ =====
+    if (progress >= 100) {
+        progress = 100;
+        updateProgressBar();
+        isQuestionPending = true;
+        console.log('⚡ Зарядка 100%! Вопрос ждёт окончания комбо...');
+    }
+    // ===========================================
+
     matches.forEach(idx => {
         board[idx] = null;
     });
@@ -448,8 +465,15 @@ async function processMatches(matches) {
         renderBoard();
         updateComboDisplay();
 
-        if (progress >= 100) {
-            triggerQuizQuestion();
+        // === ЕСЛИ ВОПРОС ЖДАЛ — ПОКАЗЫВАЕМ ===
+        if (isQuestionPending) {
+            isQuestionPending = false;
+            console.log('✅ Комбо закончились! Показываем вопрос...');
+            if (currentLesson && currentQuestionIndex < currentLesson.questions.length) {
+                triggerQuizQuestion();
+            } else {
+                showWinScreen();
+            }
         }
     }
 }
@@ -484,7 +508,7 @@ function updateProgressBar() {
         progressBar.style.width = `${progress}%`;
     }
     if (progressText) {
-        progressText.textContent = `Зарядка: ${Math.round(progress)}%`;
+        progressText.textContent = `Концентрация: ${Math.round(progress)}%`;
     }
 }
 
@@ -509,14 +533,18 @@ function updateShieldsDisplay() {
 
 function updateComboDisplay() {
     const comboDisplay = document.getElementById('combo-display');
+    const comboFrame = document.getElementById('combo-frame');
+    
     if (!comboDisplay) return;
     
     if (bestMatchCombo > 0) {
         comboDisplay.textContent = `🔥 Лучшее комбо: x${bestMatchCombo}`;
         comboDisplay.style.color = '#39ff14';
+        if (comboFrame) comboFrame.classList.add('active');
     } else {
         comboDisplay.textContent = '🔥 Комбо: 0';
         comboDisplay.style.color = '#64748b';
+        if (comboFrame) comboFrame.classList.remove('active');
     }
 }
 
@@ -525,32 +553,91 @@ function updateComboDisplay() {
 // ============================================================
 
 function triggerQuizQuestion() {
-    pauseDrain();
+    console.log('🔥 triggerQuizQuestion ВЫЗВАН!');
+    
+    if (!currentLesson) {
+        console.error('❌ currentLesson = null!');
+        showWinScreen();
+        return;
+    }
+    
+    if (!currentLesson.questions || currentLesson.questions.length === 0) {
+        console.error('❌ Нет вопросов в уроке!');
+        showWinScreen();
+        return;
+    }
+    
+    if (currentQuestionIndex >= currentLesson.questions.length) {
+        console.log('✅ Все вопросы пройдены! Победа!');
+        showWinScreen();
+        return;
+    }
+    
+    console.log('🔍 Показываем вопрос...');
     
     isBoardLocked = true;
     renderBoard();
 
     const questions = currentLesson.questions;
+    const questionData = questions[currentQuestionIndex];
     
-    if (currentQuestionIndex >= questions.length) {
-        resumeDrain();
+    if (!questionData) {
+        console.error('❌ Вопрос не найден по индексу:', currentQuestionIndex);
         showWinScreen();
         return;
     }
-
-    const questionData = questions[currentQuestionIndex];
-    const modal = document.getElementById('quiz-modal');
-    const questionEl = document.getElementById('quiz-question');
-    const answersContainer = document.getElementById('quiz-answers');
+    
+    const oldModal = document.getElementById('quiz-modal');
+    if (oldModal) oldModal.classList.add('hidden');
+    
+    let modal = document.getElementById('quiz-modal');
+    let questionEl = document.getElementById('quiz-question');
+    let answersContainer = document.getElementById('quiz-answers');
     const progressBar = document.getElementById('progress-bar');
     const progressText = document.getElementById('progress-text');
 
-    if (!modal || !questionEl || !answersContainer) return;
+    if (!modal || !questionEl || !answersContainer) {
+        console.warn('⚠️ Элементы модалки не найдены! Создаём заново...');
+        const gameScreen = document.getElementById('game-screen');
+        if (gameScreen) {
+            const oldModalEl = document.getElementById('quiz-modal');
+            if (oldModalEl) oldModalEl.remove();
+            
+            const newModal = document.createElement('div');
+            newModal.id = 'quiz-modal';
+            newModal.className = 'quiz-modal hidden';
+            newModal.innerHTML = `
+                <div class="quiz-content">
+                    <div class="quiz-header">
+                        <span class="quiz-badge">Проверка знаний</span>
+                    </div>
+                    <h3 id="quiz-question">Загрузка вопроса...</h3>
+                    <div id="quiz-answers" class="quiz-answers">
+                        <!-- Кнопки ответов сгенерируются динамически -->
+                    </div>
+                </div>
+            `;
+            gameScreen.appendChild(newModal);
+            
+            modal = document.getElementById('quiz-modal');
+            questionEl = document.getElementById('quiz-question');
+            answersContainer = document.getElementById('quiz-answers');
+            
+            if (!modal || !questionEl || !answersContainer) {
+                console.error('❌ Не удалось создать элементы модалки!');
+                return;
+            }
+        } else {
+            console.error('❌ game-screen не найден!');
+            return;
+        }
+    }
 
     if (progressBar) {
         progressBar.classList.add('timer-mode');
         progressBar.style.width = `${progress}%`;
     }
+    
     quizTimeLeft = 15;
     if (progressText) {
         progressText.textContent = `Время на ответ: ${quizTimeLeft} сек`;
@@ -588,6 +675,8 @@ function triggerQuizQuestion() {
             handleTimeOut(questionData.correct);
         }
     }, 1000);
+    
+    console.log('✅ Модалка открыта!');
 }
 
 function handleAnswerClick(selectedIdx, correctIdx, clickedBtn) {
@@ -638,6 +727,11 @@ function handleAnswerClick(selectedIdx, correctIdx, clickedBtn) {
         combo = 0;
         markQuestionResult(currentQuestionIndex, false);
         
+        const shieldMsg = shields === 2 
+            ? '❌ Атака прошла! Осталось батарей: ' + shields 
+            : '⚠️ Ещё одна батарея разряжена! Осталось: ' + shields;
+        showFloatingMessage(shieldMsg, 'warning');
+        
         progress = 0;
         updateProgressBar();
         updateShieldsDisplay();
@@ -652,10 +746,7 @@ function handleAnswerClick(selectedIdx, correctIdx, clickedBtn) {
                 return;
             }
             
-            const shieldMsg = shields === 2 
-                ? '❌ Атака прошла! Осталось батарей: ' + shields 
-                : '⚠️ Ещё одна батарея разряжена! Осталось: ' + shields;
-            showFloatingMessage(shieldMsg, 'warning');
+            currentQuestionIndex++;
             
             resumeDrain();
             startDrainTimer(2);
@@ -664,6 +755,10 @@ function handleAnswerClick(selectedIdx, correctIdx, clickedBtn) {
             isBoardLocked = false;
             renderBoard();
             updateQuestionsIndicators();
+            
+            if (currentQuestionIndex >= currentLesson.questions.length) {
+                showWinScreen();
+            }
             
         }, 1500);
     }
@@ -1019,6 +1114,7 @@ function startLoadingScreen() {
         if (lineIndex >= totalLines) {
             clearInterval(lineInterval);
             
+            if (progressText) progressText.textContent = '100%';
             if (statusText) {
                 statusText.textContent = '✅ System ready!';
                 statusText.style.color = '#22c55e';
