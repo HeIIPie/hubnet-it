@@ -411,9 +411,9 @@ async function processMatches(matches) {
         showComboMessage(`🔥 Комбо x${matchCombo}!`);
         updateComboDisplay();
         const boardEl = document.getElementById('game-board');
-        if (boardEl) {
+        if (boardEl && matchCombo >= 3) {
             boardEl.classList.add('combo-active');
-            setTimeout(() => boardEl.classList.remove('combo-active'), 500);
+            setTimeout(() => boardEl.classList.remove('combo-active'), 400);
         }
     }
     
@@ -425,11 +425,12 @@ async function processMatches(matches) {
             } else {
                 tileElements[idx].classList.add('match');
             }
-            tileElements[idx].style.animationDelay = `${i * 0.05}s`;
+            tileElements[idx].style.animationDelay = `${i * 0.03}s`;
         }
     });
 
-    await delay(400);
+    // ОПТИМИЗАЦИЯ: уменьшена задержка
+    await delay(250);
 
     const points = matches.length * 10 * Math.min(matchCombo, 5);
     score += points;
@@ -438,15 +439,6 @@ async function processMatches(matches) {
     progress = Math.min(100, progress + matches.length * 5);
     updateProgressBar();
 
-    // ===== ЕСЛИ ДОСТИГЛИ 100% — СТАВИМ ФЛАГ =====
-    if (progress >= 100) {
-        progress = 100;
-        updateProgressBar();
-        isQuestionPending = true;
-        console.log('⚡ Зарядка 100%! Вопрос ждёт окончания комбо...');
-    }
-    // ===========================================
-
     matches.forEach(idx => {
         board[idx] = null;
     });
@@ -454,7 +446,8 @@ async function processMatches(matches) {
     dropTiles();
     renderBoard();
     
-    await delay(300);
+    // ОПТИМИЗАЦИЯ: уменьшена задержка
+    await delay(200);
 
     const nextMatches = checkMatches(board);
     if (nextMatches.length > 0) {
@@ -465,7 +458,6 @@ async function processMatches(matches) {
         renderBoard();
         updateComboDisplay();
 
-        // === ЕСЛИ ВОПРОС ЖДАЛ — ПОКАЗЫВАЕМ ===
         if (isQuestionPending) {
             isQuestionPending = false;
             console.log('✅ Комбо закончились! Показываем вопрос...');
