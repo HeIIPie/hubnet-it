@@ -539,11 +539,11 @@ function updateComboDisplay() {
     
     if (bestMatchCombo > 0) {
         comboDisplay.textContent = `🔥 Лучшее комбо: x${bestMatchCombo}`;
-        comboDisplay.style.color = '#39ff14';
+        comboDisplay.className = 'combo-display active';
         if (comboFrame) comboFrame.classList.add('active');
     } else {
-        comboDisplay.textContent = '🔥 Комбо: 0';
-        comboDisplay.style.color = '#64748b';
+        comboDisplay.textContent = '🔥 Лучшее комбо: x0';
+        comboDisplay.className = 'combo-display';
         if (comboFrame) comboFrame.classList.remove('active');
     }
 }

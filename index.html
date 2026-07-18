@@ -36,17 +36,14 @@
 
     <!-- ЭКРАН 1: ГЛАВНОЕ МЕНЮ -->
     <div id="main-app" class="container">
-        <!-- Баннер -->
         <div class="logo-container">
             <img src="images/had-banner.png" alt="Hubnet Logo" class="main-logo">
         </div>
 
-        <!-- Кнопка профиля -->
         <button id="btn-profile" class="btn-profile-main">
             👤 Мой Профиль
         </button>
 
-        <!-- Курсы -->
         <div class="courses-section">
             <div class="section-header">
                 <h2 class="section-title">Курсы</h2>
@@ -83,7 +80,6 @@
             </div>
         </div>
 
-        <!-- Статистика -->
         <div class="stats-row">
             <div class="stat-item">
                 <span class="stat-number">🔥 7</span>
@@ -99,7 +95,6 @@
             </div>
         </div>
 
-        <!-- Кнопка сброса (для тестирования) -->
         <button id="btn-reset" style="
             position: fixed;
             bottom: 80px;
@@ -125,10 +120,7 @@
             <button id="btn-lessons-back" class="btn-back">← Назад</button>
             <h2>Компьютерные сети</h2>
         </div>
-        
-        <div class="lessons-list" id="lessons-list">
-            <!-- Карточки уроков сгенерируются из js/ui.js -->
-        </div>
+        <div class="lessons-list" id="lessons-list"></div>
     </div>
 
     <!-- ЭКРАН 3: МИНИ-ЛЕКЦИЯ -->
@@ -137,98 +129,77 @@
             <button id="btn-lecture-back" class="btn-back">← Уроки</button>
             <h2 id="lecture-title">Загрузка...</h2>
         </div>
-        
         <div class="lecture-content-wrapper">
-            <div class="lecture-text" id="lecture-text">
-                <!-- Текст лекции подставится из js/data/lessons.js -->
-            </div>
+            <div class="lecture-text" id="lecture-text"></div>
         </div>
-        
         <div class="lecture-footer">
             <button id="btn-start-practice" class="btn-action">Начать практику 🎮</button>
         </div>
     </div>
 
-<!-- ЭКРАН 4: ИГРОВОЕ ПОЛЕ -->
-<div id="game-screen" class="hidden container">
-    <!-- Шапка -->
-    <div class="header">
-        <button id="btn-back" class="btn-exit">Выход</button>
-        <div class="score-container">
-            <span id="timer-display" style="font-size: 0.8rem; color: #94a3b8;">⏱️ 00:00</span>
-        </div>
-    </div>
-
-    <!-- Батареи + Очки -->
-    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px; flex-shrink: 0;">
-        <div id="shields-display" style="font-size: 1.4rem; letter-spacing: 2px;">🔋 🔋 🔋</div>
-        <div id="score-display" style="font-size: 0.9rem; color: #fbbf24; font-weight: 600;">🏆 0 очков</div>
-    </div>
-
-    <!-- Индикаторы вопросов (центр) -->
-    <div id="questions-indicators" style="display: flex; justify-content: center; gap: 8px; font-size: 1.6rem; margin: 4px 0 6px 0;">
-        <span class="q-indicator" data-q="0">❓</span>
-        <span class="q-indicator" data-q="1">❓</span>
-        <span class="q-indicator" data-q="2">❓</span>
-        <span class="q-indicator" data-q="3">❓</span>
-        <span class="q-indicator" data-q="4">❓</span>
-    </div>
-
-    <!-- Комбо в рамке (центр) -->
-    <div style="display: flex; justify-content: center; margin: 4px 0 8px 0; flex-shrink: 0;">
-        <div id="combo-frame" style="
-            background: rgba(30, 41, 59, 0.3);
-            border: 1px solid rgba(255, 255, 255, 0.06);
-            border-radius: 12px;
-            padding: 6px 20px;
-            backdrop-filter: blur(4px);
-        ">
-            <div id="combo-display" style="font-size: 0.85rem; color: #64748b; text-align: center;">🔥 Комбо: 0</div>
-        </div>
-    </div>
-
-    <!-- Шкала прогресса -->
-    <div class="progress-container" style="flex-shrink: 0; margin-bottom: 8px;">
-        <div class="progress-bar-wrapper">
-            <div id="progress-bar" class="progress-bar"></div>
-        </div>
-        <div id="progress-text" class="progress-text">Концентрация: 0%</div>
-    </div>
-
-    <!-- Сетка "Три в ряд" -->
-    <div id="game-board" class="game-board">
-        <!-- Плитки сгенерируются из js/game.js -->
-    </div>
-
-    <!-- Кнопка Смешать -->
-    <button id="btn-shuffle" class="btn-shuffle-new" style="flex-shrink: 0; margin-top: 8px;">
-        🔄 Смешать
-    </button>
-
-    <!-- МОДАЛЬНОЕ ОКНО КВИЗА -->
-    <div id="quiz-modal" class="quiz-modal hidden">
-        <div class="quiz-content">
-            <div class="quiz-header">
-                <span class="quiz-badge">Проверка знаний</span>
+    <!-- ЭКРАН 4: ИГРОВОЕ ПОЛЕ -->
+    <div id="game-screen" class="hidden container">
+        <!-- Шапка с кнопкой и лого -->
+            <div class="game-header">
+                <button id="btn-back" class="btn-exit">Выход</button>
+                <span class="game-logo">HUB<span class="game-logo-highlight">NET</span></span>
             </div>
-            <h3 id="quiz-question">Загрузка вопроса...</h3>
-            <div id="quiz-answers" class="quiz-answers">
-                <!-- Кнопки ответов сгенерируются динамически -->
+
+        <!-- Верхний контейнер: Батареи + Время + Очки -->
+        <div class="game-top-bar">
+            <div id="shields-display" class="top-shields">🔋 🔋 🔋</div>
+            <div id="timer-display" class="top-timer">⏱️ 00:00</div>
+            <div id="score-display" class="top-score">🏆 0</div>
+        </div>
+
+        <!-- Средний контейнер: Вопросы + Комбо -->
+        <div class="game-middle-section">
+            <div id="questions-indicators" class="questions-row">
+                <span class="q-indicator" data-q="0">❓</span>
+                <span class="q-indicator" data-q="1">❓</span>
+                <span class="q-indicator" data-q="2">❓</span>
+                <span class="q-indicator" data-q="3">❓</span>
+                <span class="q-indicator" data-q="4">❓</span>
+            </div>
+            <div id="combo-frame" class="combo-frame">
+                <span id="combo-display" class="combo-display">🔥 Лучшее комбо: x0</span>
+            </div>
+        </div>
+
+        <!-- Шкала прогресса -->
+        <div class="progress-container">
+            <div class="progress-bar-wrapper">
+                <div id="progress-bar" class="progress-bar"></div>
+            </div>
+            <div id="progress-text" class="progress-text">Концентрация: 0%</div>
+        </div>
+
+        <!-- Сетка "Три в ряд" -->
+        <div id="game-board" class="game-board"></div>
+
+        <!-- Кнопка Смешать -->
+        <button id="btn-shuffle" class="btn-shuffle-new">🔄 Смешать</button>
+
+        <!-- МОДАЛЬНОЕ ОКНО КВИЗА -->
+        <div id="quiz-modal" class="quiz-modal hidden">
+            <div class="quiz-content">
+                <div class="quiz-header">
+                    <span class="quiz-badge">Проверка знаний</span>
+                </div>
+                <h3 id="quiz-question">Загрузка вопроса...</h3>
+                <div id="quiz-answers" class="quiz-answers"></div>
             </div>
         </div>
     </div>
-</div>
 
     <!-- ЭКРАН 5: ПРОФИЛЬ -->
     <div id="profile-screen" class="hidden container">
-        <!-- Шапка -->
         <div class="header">
             <button id="btn-profile-back" class="btn-back">← Назад</button>
             <h2>Мой Профиль</h2>
             <div style="width: 60px;"></div>
         </div>
 
-        <!-- Аватар + Имя -->
         <div class="profile-header">
             <div class="profile-avatar-large">👤</div>
             <div>
@@ -238,7 +209,6 @@
             </div>
         </div>
 
-        <!-- XP -->
         <div class="profile-xp-section">
             <div class="xp-bar-wrapper">
                 <div class="xp-bar">
@@ -255,7 +225,6 @@
             </div>
         </div>
 
-        <!-- Достижения -->
         <div class="profile-section">
             <h3 class="profile-section-title">🏆 Мои достижения</h3>
             <div class="achievements-grid">
@@ -290,7 +259,6 @@
             </div>
         </div>
 
-        <!-- Прогресс по курсам -->
         <div class="profile-section">
             <h3 class="profile-section-title">📊 Прогресс по курсам</h3>
             <div class="course-progress-list">
@@ -318,7 +286,6 @@
             </div>
         </div>
 
-        <!-- Активность -->
         <div class="profile-section">
             <h3 class="profile-section-title">📅 Недавняя активность</h3>
             <div class="activity-list">
@@ -347,7 +314,6 @@
         </div>
     </div>
 
-    <!-- Подключаем модули -->
     <script type="module" src="app.js"></script>
 </body>
 </html>
