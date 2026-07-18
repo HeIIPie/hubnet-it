@@ -195,7 +195,7 @@ function selectLesson(lesson) {
 }
 
 // ============================================================
-// 5. ЗАПУСК ИГРЫ (ПОЛНЫЙ СБРОС)
+// 5. ЗАПУСК ИГРЫ (ПОЛНЫЙ СБРОС + РАНДОМИЗАЦИЯ)
 // ============================================================
 
 function startPractice() {
@@ -215,6 +215,22 @@ function startPractice() {
     score = 0;
     seconds = 0;
     isQuestionPending = false;
+    
+    // ===== ПЕРЕМЕШИВАЕМ ВОПРОСЫ И ОТВЕТЫ =====
+    if (currentLesson && currentLesson.questions) {
+        // Перемешиваем вопросы
+        const shuffledQuestions = shuffleArray(currentLesson.questions);
+        currentLesson.shuffledQuestions = shuffledQuestions;
+        
+        // Перемешиваем ответы в каждом вопросе
+        currentLesson.shuffledQuestions.forEach(question => {
+            const correctAnswer = question.answers[question.correct];
+            const shuffledAnswers = shuffleArray(question.answers);
+            question.shuffledAnswers = shuffledAnswers;
+            question.shuffledCorrect = shuffledAnswers.indexOf(correctAnswer);
+        });
+    }
+    // ===========================================
     
     resetQuestionsIndicators();
     
@@ -549,7 +565,7 @@ function updateComboDisplay() {
 }
 
 // ============================================================
-// 11. КВИЗ
+// 11. КВИЗ (С ИСПОЛЬЗОВАНИЕМ ПЕРЕМЕШАННЫХ ДАННЫХ)
 // ============================================================
 
 function triggerQuizQuestion() {
@@ -578,7 +594,8 @@ function triggerQuizQuestion() {
     isBoardLocked = true;
     renderBoard();
 
-    const questions = currentLesson.questions;
+    // ===== ИСПОЛЬЗУЕМ ПЕРЕМЕШАННЫЕ ДАННЫЕ =====
+    const questions = currentLesson.shuffledQuestions || currentLesson.questions;
     const questionData = questions[currentQuestionIndex];
     
     if (!questionData) {
@@ -586,6 +603,12 @@ function triggerQuizQuestion() {
         showWinScreen();
         return;
     }
+    
+    const answers = questionData.shuffledAnswers || questionData.answers;
+    const correctIdx = questionData.shuffledCorrect !== undefined 
+        ? questionData.shuffledCorrect 
+        : questionData.correct;
+    // ===========================================
     
     const oldModal = document.getElementById('quiz-modal');
     if (oldModal) oldModal.classList.add('hidden');
@@ -646,11 +669,11 @@ function triggerQuizQuestion() {
     questionEl.textContent = questionData.question;
     answersContainer.innerHTML = '';
 
-    questionData.answers.forEach((answer, idx) => {
+    answers.forEach((answer, idx) => {
         const btn = document.createElement('button');
         btn.className = 'btn-answer';
         btn.textContent = answer;
-        btn.addEventListener('click', () => handleAnswerClick(idx, questionData.correct, btn));
+        btn.addEventListener('click', () => handleAnswerClick(idx, correctIdx, btn));
         answersContainer.appendChild(btn);
     });
 
@@ -672,7 +695,7 @@ function triggerQuizQuestion() {
 
         if (quizTimeLeft <= 0) {
             clearInterval(quizTimer);
-            handleTimeOut(questionData.correct);
+            handleTimeOut(correctIdx);
         }
     }, 1000);
     
@@ -1100,7 +1123,6 @@ const statusMessages = [
 function startLoadingScreen() {
     const loadingScreen = document.getElementById('loading-screen');
     const logsContainer = document.getElementById('loading-logs');
-    const progressText = document.getElementById('loading-progress-text');
     const statusText = document.getElementById('loading-status');
     
     if (!loadingScreen) return;
@@ -1114,7 +1136,6 @@ function startLoadingScreen() {
         if (lineIndex >= totalLines) {
             clearInterval(lineInterval);
             
-            if (progressText) progressText.textContent = '100%';
             if (statusText) {
                 statusText.textContent = '✅ System ready!';
                 statusText.style.color = '#22c55e';
@@ -1149,12 +1170,7 @@ function startLoadingScreen() {
         
         lineIndex++;
         
-        const progress = Math.min(Math.round((lineIndex / totalLines) * 100), 100);
-        if (progressText) {
-            progressText.textContent = progress + '%';
-        }
-        
-        const newStatusIndex = Math.min(Math.floor(progress / 14), statusMessages.length - 1);
+        const newStatusIndex = Math.min(Math.floor((lineIndex / totalLines) * 14), statusMessages.length - 1);
         if (newStatusIndex !== statusIndex && statusText) {
             statusIndex = newStatusIndex;
             statusText.textContent = statusMessages[statusIndex];
@@ -1165,7 +1181,20 @@ function startLoadingScreen() {
 }
 
 // ============================================================
-// 17. ВСПОМОГАТЕЛЬНЫЕ ФУНКЦИИ
+// 17. ПЕРЕМЕШИВАНИЕ МАССИВА
+// ============================================================
+
+function shuffleArray(array) {
+    const shuffled = [...array];
+    for (let i = shuffled.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+    }
+    return shuffled;
+}
+
+// ============================================================
+// 18. ВСПОМОГАТЕЛЬНЫЕ ФУНКЦИИ
 // ============================================================
 
 function delay(ms) {
