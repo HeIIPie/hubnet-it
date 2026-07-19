@@ -83,15 +83,89 @@ document.addEventListener('DOMContentLoaded', () => {
         greeting.textContent = userName;
     }
 
-    // Кнопка «Компьютерные сети»
-    const btnNetworks = document.getElementById('btn-computer-networks');
+    // ===== КНОПКИ МОДУЛЕЙ =====
+    // Модуль 1: Сети
+    const btnNetworks = document.getElementById('btn-module-networks');
     if (btnNetworks) {
         btnNetworks.addEventListener('click', () => {
+            console.log('🌐 Открываем модуль: Сети');
             renderLessonsList(selectLesson);
             showScreen('lessons-screen');
         });
     }
 
+    // Модуль 2: Кибербезопасность
+    const btnSecurity = document.getElementById('btn-module-security');
+    if (btnSecurity) {
+        btnSecurity.addEventListener('click', () => {
+            console.log('🛡️ Открываем модуль: Кибербезопасность');
+            alert('🛡️ Модуль «Кибербезопасность» скоро будет доступен!');
+        });
+    }
+
+    // Модуль 3: Python (СКОРО)
+    const btnPython = document.getElementById('btn-module-python');
+    if (btnPython) {
+        btnPython.addEventListener('click', () => {
+            alert('🐍 Модуль «Python основы» скоро будет доступен!');
+        });
+    }
+
+    // Модуль 4: QA (СКОРО)
+    const btnQA = document.getElementById('btn-module-qa');
+    if (btnQA) {
+        btnQA.addEventListener('click', () => {
+            alert('🧪 Модуль «QA тестирование» скоро будет доступен!');
+        });
+    }
+
+    // Модуль 5: SQL (СКОРО)
+    const btnSQL = document.getElementById('btn-module-sql');
+    if (btnSQL) {
+        btnSQL.addEventListener('click', () => {
+            alert('🗄️ Модуль «Базы данных (SQL)» скоро будет доступен!');
+        });
+    }
+
+    // Модуль 6: DevOps (СКОРО)
+    const btnDevOps = document.getElementById('btn-module-devops');
+    if (btnDevOps) {
+        btnDevOps.addEventListener('click', () => {
+            alert('⚙️ Модуль «DevOps» скоро будет доступен!');
+        });
+    }
+
+    // ===== КНОПКА "МОЙ ПРОФИЛЬ" =====
+    const btnProfile = document.getElementById('btn-profile');
+    if (btnProfile) {
+        btnProfile.addEventListener('click', () => {
+            console.log('👤 Открываем профиль');
+            showScreen('profile-screen');
+            updateProfileData();
+        });
+    }
+
+    // ===== КНОПКА "НАЗАД" ИЗ ПРОФИЛЯ =====
+    const btnProfileBack = document.getElementById('btn-profile-back');
+    if (btnProfileBack) {
+        btnProfileBack.addEventListener('click', () => {
+            showScreen('main-app');
+        });
+    }
+
+    // ===== КНОПКА СБРОСА =====
+    const btnReset = document.getElementById('btn-reset');
+    if (btnReset) {
+        btnReset.addEventListener('click', () => {
+            if (confirm('⚠️ Сбросить весь прогресс? Это удалит все сохранённые данные.')) {
+                localStorage.clear();
+                alert('✅ Прогресс сброшен! Обнови страницу.');
+                location.reload();
+            }
+        });
+    }
+
+    // ===== КНОПКИ УРОКОВ (старые, для совместимости) =====
     // Назад из списка уроков
     const btnLessonsBack = document.getElementById('btn-lessons-back');
     if (btnLessonsBack) {
@@ -135,36 +209,6 @@ document.addEventListener('DOMContentLoaded', () => {
             if (!isBoardLocked) {
                 board = generateValidBoard();
                 renderBoard();
-            }
-        });
-    }
-
-    // ===== КНОПКА "МОЙ ПРОФИЛЬ" =====
-    const btnProfile = document.getElementById('btn-profile');
-    if (btnProfile) {
-        btnProfile.addEventListener('click', () => {
-            console.log('👤 Открываем профиль');
-            showScreen('profile-screen');
-            updateProfileData();
-        });
-    }
-
-    // ===== КНОПКА "НАЗАД" ИЗ ПРОФИЛЯ =====
-    const btnProfileBack = document.getElementById('btn-profile-back');
-    if (btnProfileBack) {
-        btnProfileBack.addEventListener('click', () => {
-            showScreen('main-app');
-        });
-    }
-
-    // ===== КНОПКА СБРОСА =====
-    const btnReset = document.getElementById('btn-reset');
-    if (btnReset) {
-        btnReset.addEventListener('click', () => {
-            if (confirm('⚠️ Сбросить весь прогресс? Это удалит все сохранённые данные.')) {
-                localStorage.clear();
-                alert('✅ Прогресс сброшен! Обнови страницу.');
-                location.reload();
             }
         });
     }

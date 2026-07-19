@@ -46,33 +46,73 @@
                 <button class="btn-see-all" id="btn-see-all">Смотреть все →</button>
             </div>
             <div class="courses-grid-main" id="courses-grid">
-                <div class="course-card-main" id="btn-computer-networks">
+
+                <!-- Модуль 1: Сети (Активен) -->
+                <div class="course-card-main" data-module="networks" id="btn-module-networks">
                     <div class="course-icon">🌐</div>
                     <div class="course-info">
                         <h3>Компьютерные сети</h3>
                         <p>Изучи основы сетей от A до Z</p>
                         <div class="course-progress">
-                            <div class="progress-bar-mini" id="course-progress-main" style="width: 0%"></div>
-                            <span class="progress-text-mini" id="course-progress-text">0%</span>
+                            <div class="progress-bar-mini" id="course-progress-networks" style="width: 0%"></div>
+                            <span class="progress-text-mini" id="course-progress-networks-text">0%</span>
                         </div>
                     </div>
                 </div>
-                <div class="course-card-main locked">
-                    <div class="course-icon">📝</div>
+
+                <!-- Модуль 2: Кибербезопасность (Активен) -->
+                <div class="course-card-main" data-module="security" id="btn-module-security">
+                    <div class="course-icon">🛡️</div>
                     <div class="course-info">
-                        <h3>Квизы</h3>
-                        <p>Проверяй знания и получай XP</p>
+                        <h3>Кибербезопасность</h3>
+                        <p>Основы защиты сетей</p>
+                        <div class="course-progress">
+                            <div class="progress-bar-mini" id="course-progress-security" style="width: 0%"></div>
+                            <span class="progress-text-mini" id="course-progress-security-text">0%</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Модуль 3: Python (Скоро) -->
+                <div class="course-card-main locked" data-module="python">
+                    <div class="course-icon">🐍</div>
+                    <div class="course-info">
+                        <h3>Python основы</h3>
+                        <p>Программирование для всех</p>
                         <span class="course-badge">СКОРО</span>
                     </div>
                 </div>
-                <div class="course-card-main locked">
+
+                <!-- Модуль 4: QA (Скоро) -->
+                <div class="course-card-main locked" data-module="qa">
+                    <div class="course-icon">🧪</div>
+                    <div class="course-info">
+                        <h3>QA тестирование</h3>
+                        <p>Как находить баги</p>
+                        <span class="course-badge">СКОРО</span>
+                    </div>
+                </div>
+
+                <!-- Модуль 5: SQL (Скоро) -->
+                <div class="course-card-main locked" data-module="sql">
                     <div class="course-icon">🗄️</div>
                     <div class="course-info">
-                        <h3>Базы данных</h3>
-                        <p>SQL, проектирование и оптимизация</p>
+                        <h3>Базы данных (SQL)</h3>
+                        <p>Работа с данными</p>
                         <span class="course-badge">СКОРО</span>
                     </div>
                 </div>
+
+                <!-- Модуль 6: DevOps (Скоро) -->
+                <div class="course-card-main locked" data-module="devops">
+                    <div class="course-icon">⚙️</div>
+                    <div class="course-info">
+                        <h3>DevOps</h3>
+                        <p>CI/CD и автоматизация</p>
+                        <span class="course-badge">СКОРО</span>
+                    </div>
+                </div>
+
             </div>
         </div>
 
@@ -114,7 +154,7 @@
     <div id="lessons-screen" class="hidden container">
         <div class="header">
             <button id="btn-lessons-back" class="btn-back">← Назад</button>
-            <h2>Компьютерные сети</h2>
+            <h2 id="lessons-title">Компьютерные сети</h2>
         </div>
         <div class="lessons-list" id="lessons-list"></div>
     </div>
@@ -135,20 +175,17 @@
 
     <!-- ЭКРАН 4: ИГРОВОЕ ПОЛЕ -->
     <div id="game-screen" class="hidden container">
-        <!-- Шапка с кнопкой и лого -->
         <div class="game-header">
             <button id="btn-back" class="btn-exit">Выход</button>
             <span class="game-logo">HUB<span class="game-logo-highlight">NET</span></span>
         </div>
 
-        <!-- Верхний контейнер: Батареи + Время + Очки -->
         <div class="game-top-bar">
             <div id="shields-display" class="top-shields">🔋 🔋 🔋</div>
             <div id="timer-display" class="top-timer">⏱️ 00:00</div>
             <div id="score-display" class="top-score">🏆 0</div>
         </div>
 
-        <!-- Средний контейнер: Вопросы + Комбо -->
         <div class="game-middle-section">
             <div id="questions-indicators" class="questions-row">
                 <span class="q-indicator" data-q="0">❓</span>
@@ -162,7 +199,6 @@
             </div>
         </div>
 
-        <!-- Шкала прогресса -->
         <div class="progress-container">
             <div class="progress-bar-wrapper">
                 <div id="progress-bar" class="progress-bar"></div>
@@ -170,13 +206,10 @@
             <div id="progress-text" class="progress-text">Концентрация: 0%</div>
         </div>
 
-        <!-- Сетка "Три в ряд" -->
         <div id="game-board" class="game-board"></div>
 
-        <!-- Кнопка Смешать -->
         <button id="btn-shuffle" class="btn-shuffle-new">🔄 Смешать</button>
 
-        <!-- МОДАЛЬНОЕ ОКНО КВИЗА -->
         <div id="quiz-modal" class="quiz-modal hidden">
             <div class="quiz-content">
                 <div class="quiz-header">
