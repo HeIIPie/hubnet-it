@@ -12,20 +12,22 @@ import {
 
 import { 
     showScreen, 
-    renderLessonsList, 
+    renderModuleLessons,
     getUnlockedLessons, 
     unlockLesson,
     initTelegram,
     getUserName
 } from './js/ui.js';
 
-import { lessons } from './js/data/lessons.js';
+import { loadModule } from './js/modules/moduleManager.js';
 
 // ============================================================
 // 2. СОСТОЯНИЕ ИГРЫ (STATE)
 // ============================================================
 
 let currentLesson = null;
+let currentModuleData = null;
+let currentModuleId = null;
 let currentQuestionIndex = 0;
 let progress = 0;
 let board = [];
@@ -87,19 +89,18 @@ document.addEventListener('DOMContentLoaded', () => {
     // Модуль 1: Сети
     const btnNetworks = document.getElementById('btn-module-networks');
     if (btnNetworks) {
-        btnNetworks.addEventListener('click', () => {
+        btnNetworks.addEventListener('click', async () => {
             console.log('🌐 Открываем модуль: Сети');
-            renderLessonsList(selectLesson);
-            showScreen('lessons-screen');
+            await openModule('networks');
         });
     }
 
     // Модуль 2: Кибербезопасность
     const btnSecurity = document.getElementById('btn-module-security');
     if (btnSecurity) {
-        btnSecurity.addEventListener('click', () => {
+        btnSecurity.addEventListener('click', async () => {
             console.log('🛡️ Открываем модуль: Кибербезопасность');
-            alert('🛡️ Модуль «Кибербезопасность» скоро будет доступен!');
+            await openModule('security');
         });
     }
 
@@ -165,7 +166,7 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    // ===== КНОПКИ УРОКОВ (старые, для совместимости) =====
+    // ===== КНОПКИ УРОКОВ =====
     // Назад из списка уроков
     const btnLessonsBack = document.getElementById('btn-lessons-back');
     if (btnLessonsBack) {
@@ -221,7 +222,31 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 
 // ============================================================
-// 4. ЛОГИКА ВЫБОРА УРОКА
+// 4. ОТКРЫТИЕ МОДУЛЯ
+// ============================================================
+
+async function openModule(moduleId) {
+    console.log(`📦 Загружаем модуль: ${moduleId}`);
+    
+    const moduleData = await loadModule(moduleId);
+    if (!moduleData) {
+        alert(`❌ Ошибка загрузки модуля "${moduleId}"`);
+        console.error(`❌ Модуль ${moduleId} не загружен`);
+        return;
+    }
+    
+    currentModuleId = moduleId;
+    currentModuleData = moduleData;
+    
+    console.log(`✅ Модуль "${moduleData.title}" загружен, уроков: ${moduleData.lessons.length}`);
+    
+    // Рендерим список уроков
+    renderModuleLessons(moduleData, selectLesson);
+    showScreen('lessons-screen');
+}
+
+// ============================================================
+// 5. ЛОГИКА ВЫБОРА УРОКА
 // ============================================================
 
 function selectLesson(lesson) {
@@ -239,7 +264,7 @@ function selectLesson(lesson) {
 }
 
 // ============================================================
-// 5. ЗАПУСК ИГРЫ (ПОЛНЫЙ СБРОС + РАНДОМИЗАЦИЯ)
+// 6. ЗАПУСК ИГРЫ (ПОЛНЫЙ СБРОС + РАНДОМИЗАЦИЯ)
 // ============================================================
 
 function startPractice() {
@@ -298,7 +323,7 @@ function startPractice() {
 }
 
 // ============================================================
-// 6. ТАЙМЕР УМЕНЬШЕНИЯ ЗАРЯДКИ
+// 7. ТАЙМЕР УМЕНЬШЕНИЯ ЗАРЯДКИ
 // ============================================================
 
 function startDrainTimer(rate) {
@@ -323,7 +348,7 @@ function resumeDrain() {
 }
 
 // ============================================================
-// 7. ОЧКИ И ТАЙМЕР
+// 8. ОЧКИ И ТАЙМЕР
 // ============================================================
 
 function updateScoreDisplay() {
@@ -347,7 +372,7 @@ function stopTimer() {
 }
 
 // ============================================================
-// 8. ИНДИКАТОРЫ ВОПРОСОВ
+// 9. ИНДИКАТОРЫ ВОПРОСОВ
 // ============================================================
 
 function updateQuestionsIndicators() {
@@ -389,7 +414,7 @@ function resetQuestionsIndicators() {
 }
 
 // ============================================================
-// 9. РЕНДЕРИНГ И ЛОГИКА ИГРОВОГО ПОЛЯ
+// 10. РЕНДЕРИНГ И ЛОГИКА ИГРОВОГО ПОЛЯ
 // ============================================================
 
 function renderBoard() {
@@ -573,7 +598,7 @@ function updateProgressBar() {
 }
 
 // ============================================================
-// 10. ОТОБРАЖЕНИЕ БАТАРЕЙ И КОМБО
+// 11. ОТОБРАЖЕНИЕ БАТАРЕЙ И КОМБО
 // ============================================================
 
 function updateShieldsDisplay() {
@@ -609,7 +634,7 @@ function updateComboDisplay() {
 }
 
 // ============================================================
-// 11. КВИЗ (С ИСПОЛЬЗОВАНИЕМ ПЕРЕМЕШАННЫХ ДАННЫХ)
+// 12. КВИЗ (С ИСПОЛЬЗОВАНИЕМ ПЕРЕМЕШАННЫХ ДАННЫХ)
 // ============================================================
 
 function triggerQuizQuestion() {
@@ -918,7 +943,7 @@ function showFloatingMessage(text, type = 'info') {
 }
 
 // ============================================================
-// 12. ЭКРАН ПОБЕДЫ
+// 13. ЭКРАН ПОБЕДЫ
 // ============================================================
 
 function showWinScreen() {
@@ -927,12 +952,14 @@ function showWinScreen() {
     resumeDrain();
     stopTimer();
     
-    const currentIdx = lessons.findIndex(l => l.id === currentLesson.id);
-    if (currentIdx !== -1 && currentIdx + 1 < lessons.length) {
-        const nextLessonId = lessons[currentIdx + 1].id;
-        unlockLesson(nextLessonId);
-        console.log(`🔓 Урок ${nextLessonId} разблокирован!`);
-        renderLessonsList(selectLesson);
+    // Разблокируем следующий урок в текущем модуле
+    if (currentModuleData && currentLesson) {
+        const currentIdx = currentModuleData.lessons.findIndex(l => l.id === currentLesson.id);
+        if (currentIdx !== -1 && currentIdx + 1 < currentModuleData.lessons.length) {
+            const nextLessonId = currentModuleData.lessons[currentIdx + 1].id;
+            unlockLesson(nextLessonId);
+            console.log(`🔓 Урок ${nextLessonId} разблокирован!`);
+        }
     }
     
     const xp = correctAnswers * 50;
@@ -990,7 +1017,7 @@ function showWinScreen() {
 }
 
 // ============================================================
-// 13. ЭКРАН ПОРАЖЕНИЯ
+// 14. ЭКРАН ПОРАЖЕНИЯ
 // ============================================================
 
 function showLossScreen() {
@@ -1031,7 +1058,7 @@ function showLossScreen() {
 }
 
 // ============================================================
-// 14. ЭКСПОРТ ФУНКЦИЙ В ГЛОБАЛЬНУЮ ОБЛАСТЬ
+// 15. ЭКСПОРТ ФУНКЦИЙ В ГЛОБАЛЬНУЮ ОБЛАСТЬ
 // ============================================================
 
 window.restartLesson = function() {
@@ -1059,18 +1086,21 @@ window.nextLesson = function() {
     resumeDrain();
     stopTimer();
     
-    const currentIdx = lessons.findIndex(l => l.id === currentLesson.id);
-    if (currentIdx !== -1 && currentIdx + 1 < lessons.length) {
-        const nextLesson = lessons[currentIdx + 1];
-        selectLesson(nextLesson);
-    } else {
-        alert('🎉 Ты прошёл все уроки! Возвращаемся в меню.');
-        showScreen('main-app');
+    if (currentModuleData && currentLesson) {
+        const currentIdx = currentModuleData.lessons.findIndex(l => l.id === currentLesson.id);
+        if (currentIdx !== -1 && currentIdx + 1 < currentModuleData.lessons.length) {
+            const nextLesson = currentModuleData.lessons[currentIdx + 1];
+            selectLesson(nextLesson);
+            return;
+        }
     }
+    
+    alert('🎉 Ты прошёл все уроки! Возвращаемся в меню.');
+    showScreen('main-app');
 };
 
 // ============================================================
-// 15. ОБНОВЛЕНИЕ ДАННЫХ ПРОФИЛЯ
+// 16. ОБНОВЛЕНИЕ ДАННЫХ ПРОФИЛЯ
 // ============================================================
 
 function updateProfileData() {
@@ -1105,7 +1135,7 @@ function updateProfileData() {
 }
 
 // ============================================================
-// 16. ЭКРАН ЗАГРУЗКИ (LINUX STYLE)
+// 17. ЭКРАН ЗАГРУЗКИ (LINUX STYLE)
 // ============================================================
 
 const bootMessages = [
@@ -1225,7 +1255,7 @@ function startLoadingScreen() {
 }
 
 // ============================================================
-// 17. ПЕРЕМЕШИВАНИЕ МАССИВА
+// 18. ПЕРЕМЕШИВАНИЕ МАССИВА
 // ============================================================
 
 function shuffleArray(array) {
@@ -1238,7 +1268,7 @@ function shuffleArray(array) {
 }
 
 // ============================================================
-// 18. ВСПОМОГАТЕЛЬНЫЕ ФУНКЦИИ
+// 19. ВСПОМОГАТЕЛЬНЫЕ ФУНКЦИИ
 // ============================================================
 
 function delay(ms) {

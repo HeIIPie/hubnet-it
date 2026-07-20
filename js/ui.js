@@ -2,8 +2,6 @@
 // 1. ИМПОРТЫ
 // ============================================================
 
-import { lessons } from './data/lessons.js';
-
 // ============================================================
 // 2. ПЕРЕМЕННЫЕ
 // ============================================================
@@ -77,7 +75,7 @@ export function getUnlockedLessons() {
         }
     }
     // По умолчанию открыт только самый первый урок
-    return [lessons[0]?.id || 'networks_1']; 
+    return ['networks_1']; 
 }
 
 /**
@@ -121,7 +119,7 @@ export function loadProgress() {
 }
 
 // ============================================================
-// 5. УПРАВЛЕНИЕ ЭКРАНАМИ (ИСПРАВЛЕНО)
+// 5. УПРАВЛЕНИЕ ЭКРАНАМИ
 // ============================================================
 
 /**
@@ -149,32 +147,48 @@ export function showScreen(screenId) {
 }
 
 // ============================================================
-// 6. ОТРИСОВКА УРОКОВ
+// 6. ОТРИСОВКА УРОКОВ (ДЛЯ МОДУЛЕЙ)
 // ============================================================
 
 /**
- * Динамически отрисовывает карточки уроков на экране выбора уроков
+ * Отрисовывает список уроков для конкретного модуля
+ * @param {Object} moduleData - Данные модуля (с полями title, icon, lessons)
+ * @param {Function} onSelectLesson - Колбэк при выборе урока
  */
-export function renderLessonsList(onSelectLesson) {
+export function renderModuleLessons(moduleData, onSelectLesson) {
     const listContainer = document.getElementById('lessons-list');
     if (!listContainer) {
         console.error('❌ Контейнер lessons-list не найден!');
         return;
     }
     
+    // Очищаем контейнер
     listContainer.innerHTML = '';
+    
+    // Обновляем заголовок экрана
+    const titleEl = document.getElementById('lessons-title');
+    if (titleEl) {
+        titleEl.textContent = moduleData.icon + ' ' + moduleData.title;
+    }
+    
+    // Загружаем разблокированные уроки
     const unlocked = getUnlockedLessons();
     
-    lessons.forEach((lesson, index) => {
+    // Проходим по всем урокам модуля
+    moduleData.lessons.forEach((lesson, index) => {
         const isLocked = index > 0 && !unlocked.includes(lesson.id);
         
         const card = document.createElement('div');
         card.className = `lesson-card ${isLocked ? 'locked' : ''}`;
         
+        // Показываем количество вопросов, если они есть
+        const hasQuestions = lesson.questions && lesson.questions.length > 0;
+        const questionBadge = hasQuestions ? `📝 ${lesson.questions.length} вопросов` : '📖 Без вопросов';
+        
         card.innerHTML = `
             <div class="lesson-card-info">
-                <h3>${lesson.title}</h3>
-                <p>${isLocked ? '🔒 Пройдите предыдущий урок для открытия' : '📖 Теория + Практика 🎮'}</p>
+                <h3>${index + 1}. ${lesson.title}</h3>
+                <p>${isLocked ? '🔒 Пройдите предыдущий урок для открытия' : questionBadge}</p>
             </div>
             <div class="lesson-status-icon">
                 ${isLocked ? '🔒' : '👉'}
@@ -190,5 +204,18 @@ export function renderLessonsList(onSelectLesson) {
         listContainer.appendChild(card);
     });
     
-    console.log(`✅ Отрисовано ${lessons.length} уроков`);
+    console.log(`✅ Отрисовано ${moduleData.lessons.length} уроков модуля "${moduleData.title}"`);
+}
+
+// ============================================================
+// 7. СТАРАЯ ФУНКЦИЯ (ОСТАВЛЯЕМ ДЛЯ СОВМЕСТИМОСТИ, НО МОЖНО УДАЛИТЬ ПОТОМ)
+// ============================================================
+
+/**
+ * @deprecated Используйте renderModuleLessons() вместо этой функции
+ */
+export function renderLessonsList(onSelectLesson) {
+    console.warn('⚠️ renderLessonsList() устарела. Используйте renderModuleLessons()');
+    // Просто вызываем новую функцию с запасным модулем (если нужно)
+    // Но лучше не использовать
 }
