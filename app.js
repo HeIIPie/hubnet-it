@@ -20,6 +20,7 @@ import {
 } from './js/ui.js';
 
 import { loadModule } from './js/modules/moduleManager.js';
+import { detective } from './js/games/detective.js';
 
 // ============================================================
 // 2. СОСТОЯНИЕ ИГРЫ (STATE)
@@ -56,6 +57,17 @@ let score = 0;
 let timerInterval = null;
 let seconds = 0;
 
+// Состояние детектива
+let detectiveState = {
+    currentCase: null,
+    quickQuestionIndex: 0,
+    caseQuestionIndex: 0,
+    phase: 'quick', // 'quick' | 'case' | 'complete'
+    quickAnswers: [],
+    caseAnswers: [],
+    caseStarted: false
+};
+
 // Фразы для поражения
 const lossPhrases = [
     "💥 Сеть подверглась DDoS-атаке. Щиты не выдержали.",
@@ -86,7 +98,6 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     // ===== КНОПКИ МОДУЛЕЙ =====
-    // Модуль 1: Сети
     const btnNetworks = document.getElementById('btn-module-networks');
     if (btnNetworks) {
         btnNetworks.addEventListener('click', async () => {
@@ -95,7 +106,6 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    // Модуль 2: Кибербезопасность
     const btnSecurity = document.getElementById('btn-module-security');
     if (btnSecurity) {
         btnSecurity.addEventListener('click', async () => {
@@ -104,7 +114,6 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    // Модуль 3: Python (СКОРО)
     const btnPython = document.getElementById('btn-module-python');
     if (btnPython) {
         btnPython.addEventListener('click', () => {
@@ -112,7 +121,6 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    // Модуль 4: QA (СКОРО)
     const btnQA = document.getElementById('btn-module-qa');
     if (btnQA) {
         btnQA.addEventListener('click', () => {
@@ -120,7 +128,6 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    // Модуль 5: SQL (СКОРО)
     const btnSQL = document.getElementById('btn-module-sql');
     if (btnSQL) {
         btnSQL.addEventListener('click', () => {
@@ -128,7 +135,6 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    // Модуль 6: DevOps (СКОРО)
     const btnDevOps = document.getElementById('btn-module-devops');
     if (btnDevOps) {
         btnDevOps.addEventListener('click', () => {
@@ -146,7 +152,6 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    // ===== КНОПКА "НАЗАД" ИЗ ПРОФИЛЯ =====
     const btnProfileBack = document.getElementById('btn-profile-back');
     if (btnProfileBack) {
         btnProfileBack.addEventListener('click', () => {
@@ -167,7 +172,6 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     // ===== КНОПКИ УРОКОВ =====
-    // Назад из списка уроков
     const btnLessonsBack = document.getElementById('btn-lessons-back');
     if (btnLessonsBack) {
         btnLessonsBack.addEventListener('click', () => {
@@ -176,7 +180,6 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    // Назад из лекции
     const btnLectureBack = document.getElementById('btn-lecture-back');
     if (btnLectureBack) {
         btnLectureBack.addEventListener('click', () => {
@@ -184,30 +187,31 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    // Кнопка «Начать практику»
     const btnStartPractice = document.getElementById('btn-start-practice');
     if (btnStartPractice) {
         btnStartPractice.addEventListener('click', () => {
+            console.log('🔘 Нажата кнопка "Начать практику"');
+            console.log('📦 currentModuleData:', currentModuleData);
+            console.log('🎮 game:', currentModuleData?.game);
             startPractice();
         });
     }
 
-    // Кнопка «Выход» из игры
     const btnBack = document.getElementById('btn-back');
     if (btnBack) {
         btnBack.addEventListener('click', () => {
             clearInterval(drainTimer);
             clearInterval(quizTimer);
             stopTimer();
+            resetDetectiveState();
             showScreen('lessons-screen');
         });
     }
 
-    // Кнопка «Смешать»
     const btnShuffle = document.getElementById('btn-shuffle');
     if (btnShuffle) {
         btnShuffle.addEventListener('click', () => {
-            if (!isBoardLocked) {
+            if (!isBoardLocked && !isDetectiveMode()) {
                 board = generateValidBoard();
                 renderBoard();
             }
@@ -217,7 +221,6 @@ document.addEventListener('DOMContentLoaded', () => {
     showScreen('main-app');
     console.log('✅ Инициализация завершена');
 
-    // Запускаем экран загрузки
     startLoadingScreen();
 });
 
@@ -239,8 +242,8 @@ async function openModule(moduleId) {
     currentModuleData = moduleData;
     
     console.log(`✅ Модуль "${moduleData.title}" загружен, уроков: ${moduleData.lessons.length}`);
+    console.log(`🎮 Тип игры: ${moduleData.game || 'match3'}`);
     
-    // Рендерим список уроков
     renderModuleLessons(moduleData, selectLesson);
     showScreen('lessons-screen');
 }
@@ -250,24 +253,73 @@ async function openModule(moduleId) {
 // ============================================================
 
 function selectLesson(lesson) {
-    currentLesson = lesson;
+    // СБРАСЫВАЕМ СТАРЫЕ ДАННЫЕ
     currentQuestionIndex = 0;
     progress = 0;
     
+    // === ОЧИЩАЕМ КОНТЕЙНЕР ТЕСТА ===
+    const testContainer = document.getElementById('simple-test-container');
+    if (testContainer) {
+        testContainer.innerHTML = '';
+        testContainer.style.display = 'none';
+    }
+    // ================================
+    
+    currentLesson = lesson;
+    
+    console.log(`📖 Выбран урок: ${lesson.id} - ${lesson.title}`);
+    
     const titleEl = document.getElementById('lecture-title');
     const textEl = document.getElementById('lecture-text');
+    const practiceBtn = document.getElementById('btn-start-practice');
     
     if (titleEl) titleEl.textContent = lesson.title;
     if (textEl) textEl.innerHTML = lesson.lecture;
+    
+    // Для урока 16 (итоги) — скрываем кнопку ТОЛЬКО для ИБ
+    if (currentModuleId === 'security' && lesson.id === 'security_16') {
+        if (practiceBtn) practiceBtn.style.display = 'none';
+    } else {
+        if (practiceBtn) practiceBtn.style.display = 'block';
+    }
     
     showScreen('lecture-screen');
 }
 
 // ============================================================
-// 6. ЗАПУСК ИГРЫ (ПОЛНЫЙ СБРОС + РАНДОМИЗАЦИЯ)
+// 6. ЗАПУСК ПРАКТИКИ
 // ============================================================
 
 function startPractice() {
+    console.log('🎯 startPractice вызвана!');
+    console.log('📦 currentModuleData:', currentModuleData);
+    console.log('🎮 game:', currentModuleData?.game);
+    console.log('📖 currentLesson:', currentLesson);
+    
+    // СПЕЦИАЛЬНО ДЛЯ security_1 — ПРОСТОЙ ТЕСТ
+    if (currentLesson && currentLesson.id === 'security_1') {
+        console.log('📝 Урок 1 — запускаем тест');
+        startSimpleTest();
+        return;
+    }
+    
+    // Проверяем, какая игра у модуля
+    if (currentModuleData && currentModuleData.game === 'detective') {
+        console.log('🕵️ Запускаем Кибердетектив!');
+        startDetectiveGame();
+        return;
+    }
+    
+    // Если не детектив — запускаем match3
+    console.log('🎮 Запускаем Match-3');
+    startMatch3Game();
+}
+
+// ============================================================
+// 7. MATCH-3 ИГРА
+// ============================================================
+
+function startMatch3Game() {
     progress = 0;
     shields = 3;
     combo = 0;
@@ -285,13 +337,12 @@ function startPractice() {
     seconds = 0;
     isQuestionPending = false;
     
-    // ===== ПЕРЕМЕШИВАЕМ ВОПРОСЫ И ОТВЕТЫ =====
+    hideDetectiveUI();
+    
     if (currentLesson && currentLesson.questions) {
-        // Перемешиваем вопросы
         const shuffledQuestions = shuffleArray(currentLesson.questions);
         currentLesson.shuffledQuestions = shuffledQuestions;
         
-        // Перемешиваем ответы в каждом вопросе
         currentLesson.shuffledQuestions.forEach(question => {
             const correctAnswer = question.answers[question.correct];
             const shuffledAnswers = shuffleArray(question.answers);
@@ -299,7 +350,6 @@ function startPractice() {
             question.shuffledCorrect = shuffledAnswers.indexOf(correctAnswer);
         });
     }
-    // ===========================================
     
     resetQuestionsIndicators();
     
@@ -319,11 +369,636 @@ function startPractice() {
     
     startDrainTimer(2);
     
-    console.log('✅ startPractice: все переменные сброшены, currentQuestionIndex =', currentQuestionIndex);
+    console.log('✅ startMatch3Game: все переменные сброшены');
 }
 
 // ============================================================
-// 7. ТАЙМЕР УМЕНЬШЕНИЯ ЗАРЯДКИ
+// 8. ПРОСТОЙ ТЕСТ (ДЛЯ УРОКА 1)
+// ============================================================
+
+function startSimpleTest() {
+    console.log('📝 Запускаем простой тест!');
+    
+    // Сбрасываем состояние
+    currentQuestionIndex = 0;
+    correctAnswers = 0;
+    wrongAnswers = 0;
+    score = 0;
+    startTime = Date.now();
+    
+    // СКРЫВАЕМ ВСЁ ЛИШНЕЕ
+    const topBar = document.querySelector('.game-top-bar');
+    const middleSection = document.querySelector('.game-middle-section');
+    const progressContainer = document.querySelector('.progress-container');
+    const board = document.getElementById('game-board');
+    const shuffleBtn = document.getElementById('btn-shuffle');
+    const comboFrame = document.getElementById('combo-frame');
+    const scoreDisplay = document.getElementById('score-display');
+    const timerDisplay = document.getElementById('timer-display');
+    const shieldsDisplay = document.getElementById('shields-display');
+    
+    if (topBar) topBar.style.display = 'none';
+    if (middleSection) middleSection.style.display = 'none';
+    if (progressContainer) progressContainer.style.display = 'none';
+    if (board) board.style.display = 'none';
+    if (shuffleBtn) shuffleBtn.style.display = 'none';
+    if (comboFrame) comboFrame.style.display = 'none';
+    if (scoreDisplay) scoreDisplay.style.display = 'none';
+    if (timerDisplay) timerDisplay.style.display = 'none';
+    if (shieldsDisplay) shieldsDisplay.style.display = 'none';
+    
+    // Меняем заголовок
+    const gameHeader = document.querySelector('.game-header');
+    if (gameHeader) {
+        const logo = gameHeader.querySelector('.game-logo');
+        if (logo) logo.textContent = '📝 Проверка знаний';
+    }
+    
+    showTestQuestion();
+    showScreen('game-screen');
+}
+
+function showTestQuestion() {
+    if (!currentLesson || !currentLesson.questions) {
+        console.error('❌ Нет вопросов в уроке!');
+        finishSimpleTest();
+        return;
+    }
+    
+    if (currentQuestionIndex >= currentLesson.questions.length) {
+        finishSimpleTest();
+        return;
+    }
+    
+    const question = currentLesson.questions[currentQuestionIndex];
+    const total = currentLesson.questions.length;
+    const current = currentQuestionIndex + 1;
+    
+    let container = document.getElementById('simple-test-container');
+    if (!container) {
+        container = document.createElement('div');
+        container.id = 'simple-test-container';
+        container.className = 'simple-test-container';
+        document.getElementById('game-screen').appendChild(container);
+    }
+    container.style.display = 'block';
+    
+    container.innerHTML = `
+        <div class="simple-test">
+            <div class="test-header">
+                <span class="test-progress">Вопрос ${current} из ${total}</span>
+                <span class="test-score">✅ ${correctAnswers} | ❌ ${wrongAnswers}</span>
+            </div>
+            <div class="test-question">${question.question}</div>
+            <div class="test-options">
+                ${question.answers.map((answer, idx) => `
+                    <button class="test-option" data-index="${idx}" onclick="window.handleTestAnswer(${idx}, ${question.correct}, this)">
+                        ${String.fromCharCode(65 + idx)}. ${answer}
+                    </button>
+                `).join('')}
+            </div>
+            <div class="test-feedback" id="test-feedback"></div>
+        </div>
+    `;
+}
+
+window.handleTestAnswer = function(selected, correct, btn) {
+    const buttons = document.querySelectorAll('.test-option');
+    buttons.forEach(b => b.disabled = true);
+    
+    const feedback = document.getElementById('test-feedback');
+    
+    if (selected === correct) {
+        btn.classList.add('correct');
+        correctAnswers++;
+        feedback.innerHTML = `<div class="feedback-correct">✅ Правильно! +20 XP</div>`;
+        score += 20;
+    } else {
+        btn.classList.add('wrong');
+        buttons[correct].classList.add('correct');
+        wrongAnswers++;
+        feedback.innerHTML = `<div class="feedback-wrong">❌ Неправильно. Правильный ответ: ${String.fromCharCode(65 + correct)}</div>`;
+    }
+    
+    setTimeout(() => {
+        currentQuestionIndex++;
+        if (currentQuestionIndex < currentLesson.questions.length) {
+            showTestQuestion();
+        } else {
+            finishSimpleTest();
+        }
+    }, 1500);
+};
+
+function finishSimpleTest() {
+    // Сохраняем текущий урок для разблокировки
+    const completedLesson = currentLesson;
+    
+    const total = completedLesson.questions.length;
+    const passed = correctAnswers >= total * 0.6;
+    
+    const container = document.getElementById('simple-test-container');
+    if (!container) return;
+    
+    const elapsed = Math.floor((Date.now() - startTime) / 1000);
+    const timeStr = `${String(Math.floor(elapsed / 60)).padStart(2, '0')}:${String(elapsed % 60).padStart(2, '0')}`;
+    
+    container.innerHTML = `
+        <div class="test-complete">
+            <div class="complete-icon">${passed ? '🎉' : '📖'}</div>
+            <h3>${passed ? 'Тест пройден!' : 'Стоит повторить'}</h3>
+            <div class="test-stats">
+                <div class="stat-row">
+                    <span>✅ Правильно:</span>
+                    <span>${correctAnswers}/${total}</span>
+                </div>
+                <div class="stat-row">
+                    <span>❌ Неправильно:</span>
+                    <span>${wrongAnswers}</span>
+                </div>
+                <div class="stat-row">
+                    <span>⏱️ Время:</span>
+                    <span>${timeStr}</span>
+                </div>
+                <div class="stat-row total">
+                    <span>🏆 Очки:</span>
+                    <span>${score}</span>
+                </div>
+            </div>
+            <div class="complete-buttons">
+                <button class="btn-complete" onclick="window.goToMenu()">🏠 В меню</button>
+                <button class="btn-complete secondary" onclick="window.goToMenu()">📚 К урокам</button>
+            </div>
+        </div>
+    `;
+    
+    const xp = correctAnswers * 50;
+    localStorage.setItem('hubnet_xp', xp);
+    
+    if (currentModuleData && completedLesson) {
+        const currentIdx = currentModuleData.lessons.findIndex(l => l.id === completedLesson.id);
+        if (currentIdx !== -1 && currentIdx + 1 < currentModuleData.lessons.length) {
+            const nextLessonId = currentModuleData.lessons[currentIdx + 1].id;
+            unlockLesson(nextLessonId);
+            console.log(`🔓 Урок ${nextLessonId} разблокирован!`);
+        }
+    }
+    
+    stopTimer();
+}
+
+// ============================================================
+// 9. ДЕТЕКТИВ
+// ============================================================
+
+function isDetectiveMode() {
+    return currentModuleData && currentModuleData.game === 'detective';
+}
+
+function resetDetectiveState() {
+    detectiveState = {
+        currentCase: null,
+        quickQuestionIndex: 0,
+        caseQuestionIndex: 0,
+        phase: 'quick',
+        quickAnswers: [],
+        caseAnswers: [],
+        caseStarted: false
+    };
+}
+
+function startDetectiveGame() {
+    console.log('🕵️ startDetectiveGame вызвана!');
+    console.log('📖 currentLesson:', currentLesson);
+    
+    // ПРОВЕРКА: если currentLesson = security_1 — ПРЕРЫВАЕМ
+    if (currentLesson && currentLesson.id === 'security_1') {
+        console.log('⚠️ Урок 1 не должен запускать детектив!');
+        showFloatingMessage('❌ Ошибка: неверный урок', 'warning');
+        setTimeout(() => showScreen('lessons-screen'), 1500);
+        return;
+    }
+    
+    if (!currentLesson) {
+        console.error('❌ currentLesson = null!');
+        showFloatingMessage('❌ Ошибка: урок не выбран', 'warning');
+        setTimeout(() => showScreen('lessons-screen'), 1500);
+        return;
+    }
+    
+    resetDetectiveState();
+    
+    console.log(`🔍 Ищем кейс для lessonId: ${currentLesson.id}`);
+    const caseData = detective.cases.find(c => c.lessonId === currentLesson.id);
+    
+    console.log('📋 Найден кейс:', caseData);
+    
+    if (!caseData) {
+        showFloatingMessage('🔍 Для этого урока нет расследования', 'warning');
+        setTimeout(() => {
+            showScreen('lessons-screen');
+        }, 1500);
+        return;
+    }
+    
+    detectiveState.currentCase = caseData;
+    detectiveState.caseStarted = true;
+    
+    console.log(`✅ Запускаем кейс: ${caseData.title}`);
+    
+    const board = document.getElementById('game-board');
+    const shuffleBtn = document.getElementById('btn-shuffle');
+    const progressContainer = document.querySelector('.progress-container');
+    const gameMiddle = document.querySelector('.game-middle-section');
+    const gameTopBar = document.querySelector('.game-top-bar');
+    const gameHeader = document.querySelector('.game-header');
+    
+    if (board) board.style.display = 'none';
+    if (shuffleBtn) shuffleBtn.style.display = 'none';
+    if (progressContainer) progressContainer.style.display = 'none';
+    if (gameMiddle) gameMiddle.style.display = 'none';
+    if (gameTopBar) gameTopBar.style.display = 'none';
+    if (gameHeader) {
+        const logo = gameHeader.querySelector('.game-logo');
+        if (logo) logo.textContent = '🕵️ Кибердетектив';
+    }
+    
+    showDetectiveUI(caseData);
+    showScreen('game-screen');
+}
+
+function showDetectiveUI(caseData) {
+    // === ОЧИЩАЕМ КОНТЕЙНЕР ТЕСТА ===
+    const testContainer = document.getElementById('simple-test-container');
+    if (testContainer) {
+        testContainer.innerHTML = '';
+        testContainer.style.display = 'none';
+    }
+    // ================================
+    
+    let container = document.getElementById('detective-container');
+    if (!container) {
+        container = document.createElement('div');
+        container.id = 'detective-container';
+        container.className = 'detective-container';
+        document.getElementById('game-screen').appendChild(container);
+    }
+    
+    container.innerHTML = renderDetectiveCase(caseData);
+    container.style.display = 'block';
+    
+    if (caseData.quickQuestions && caseData.quickQuestions.length > 0) {
+        detectiveState.phase = 'quick';
+        detectiveState.quickQuestionIndex = 0;
+        showQuickQuestion(caseData, 0);
+    } else if (caseData.caseQuestions && caseData.caseQuestions.length > 0) {
+        detectiveState.phase = 'case';
+        detectiveState.caseQuestionIndex = 0;
+        showCaseQuestion(caseData, 0);
+    }
+}
+
+function hideDetectiveUI() {
+    const container = document.getElementById('detective-container');
+    if (container) {
+        container.style.display = 'none';
+    }
+    
+    const board = document.getElementById('game-board');
+    const shuffleBtn = document.getElementById('btn-shuffle');
+    const progressContainer = document.querySelector('.progress-container');
+    const gameMiddle = document.querySelector('.game-middle-section');
+    const gameTopBar = document.querySelector('.game-top-bar');
+    const gameHeader = document.querySelector('.game-header');
+    
+    if (board) board.style.display = 'grid';
+    if (shuffleBtn) shuffleBtn.style.display = 'block';
+    if (progressContainer) progressContainer.style.display = 'block';
+    if (gameMiddle) gameMiddle.style.display = 'flex';
+    if (gameTopBar) gameTopBar.style.display = 'flex';
+    if (gameHeader) {
+        const logo = gameHeader.querySelector('.game-logo');
+        if (logo) logo.textContent = 'HUB' + '<span class="game-logo-highlight">NET</span>';
+    }
+}
+
+function renderDetectiveCase(caseData) {
+    const totalQuick = caseData.quickQuestions ? caseData.quickQuestions.length : 0;
+    const totalCase = caseData.caseQuestions ? caseData.caseQuestions.length : 0;
+    const total = totalQuick + totalCase;
+    
+    return `
+        <div class="detective-content">
+            <div class="detective-header">
+                <span class="detective-icon">${caseData.icon || '🕵️'}</span>
+                <h2>${caseData.title}</h2>
+                <span class="detective-difficulty ${caseData.difficulty}">
+                    ${caseData.difficulty === 'easy' ? '🟢 Лёгкий' : '🟡 Средний'}
+                </span>
+            </div>
+            <div class="detective-description">
+                ${caseData.description}
+            </div>
+            <div class="detective-evidence">
+                <h4>📋 Улики:</h4>
+                ${caseData.evidence.map(ev => `
+                    <div class="evidence-block">
+                        <div class="evidence-label">${ev.label}</div>
+                        <div class="evidence-data">${ev.data.map(line => `<div class="log-line">${line}</div>`).join('')}</div>
+                    </div>
+                `).join('')}
+            </div>
+            <div class="detective-questions" id="detective-questions">
+                <!-- Вопросы загружаются динамически -->
+            </div>
+            <div class="detective-progress">
+                <span id="detective-progress-text">Вопрос 1 из ${total}</span>
+            </div>
+        </div>
+    `;
+}
+
+function showQuickQuestion(caseData, index) {
+    const container = document.getElementById('detective-questions');
+    if (!container) return;
+    
+    const questions = caseData.quickQuestions;
+    if (!questions || index >= questions.length) {
+        if (caseData.caseQuestions && caseData.caseQuestions.length > 0) {
+            detectiveState.phase = 'case';
+            detectiveState.caseQuestionIndex = 0;
+            showCaseQuestion(caseData, 0);
+        } else {
+            completeDetectiveCase(caseData);
+        }
+        return;
+    }
+    
+    const question = questions[index];
+    const total = questions.length + (caseData.caseQuestions ? caseData.caseQuestions.length : 0);
+    const current = index + 1;
+    
+    container.innerHTML = `
+        <div class="question-block quick-question">
+            <div class="question-number">❓ Вопрос ${current} из ${total}</div>
+            <div class="question-text">${question.question}</div>
+            <div class="question-options">
+                ${question.options.map((opt, i) => `
+                    <button class="option-btn" data-index="${i}" onclick="window.handleQuickAnswer(${i}, ${question.correct}, this, ${index}, '${question.explanation || ''}')">
+                        ${String.fromCharCode(65 + i)}. ${opt}
+                    </button>
+                `).join('')}
+            </div>
+            <div class="question-hint">💡 ${question.hint || 'Подумай внимательно'}</div>
+            <div class="question-feedback" id="quick-feedback"></div>
+        </div>
+    `;
+    
+    updateDetectiveProgress(current, total);
+}
+
+function showCaseQuestion(caseData, index) {
+    const container = document.getElementById('detective-questions');
+    if (!container) return;
+    
+    const questions = caseData.caseQuestions;
+    if (!questions || index >= questions.length) {
+        completeDetectiveCase(caseData);
+        return;
+    }
+    
+    const question = questions[index];
+    const totalQuick = caseData.quickQuestions ? caseData.quickQuestions.length : 0;
+    const total = totalQuick + questions.length;
+    const current = totalQuick + index + 1;
+    
+    const selectedAnswers = detectiveState.caseAnswers[index] || [];
+    
+    container.innerHTML = `
+        <div class="question-block case-question">
+            <div class="question-number">📋 Вопрос ${current} из ${total} (сбор улик)</div>
+            <div class="question-text">${question.question}</div>
+            <div class="question-options case-options">
+                ${question.options.map((opt, i) => {
+                    const checked = selectedAnswers.includes(opt.id) ? 'checked' : '';
+                    return `
+                        <label class="case-option-label">
+                            <input type="checkbox" class="case-checkbox" data-id="${opt.id}" ${checked} onchange="window.toggleCaseAnswer(${index}, '${opt.id}', this)">
+                            ${opt.text}
+                        </label>
+                    `;
+                }).join('')}
+            </div>
+            <div class="question-hint">💡 ${question.hint || 'Выбери все подходящие варианты'}</div>
+            <button class="btn-next-case" onclick="window.submitCaseAnswers(${index})">📤 Отправить ответы</button>
+            <div class="question-feedback" id="case-feedback-${index}"></div>
+        </div>
+    `;
+    
+    updateDetectiveProgress(current, total);
+}
+
+// Глобальные функции для детектива
+window.handleQuickAnswer = function(selected, correct, btn, index, explanation) {
+    const buttons = document.querySelectorAll('.option-btn');
+    buttons.forEach(b => b.disabled = true);
+    
+    const feedback = document.getElementById('quick-feedback');
+    
+    if (selected === correct) {
+        btn.classList.add('correct');
+        detectiveState.quickAnswers.push({ index, correct: true });
+        feedback.innerHTML = `
+            <div class="feedback-correct">✅ Правильно! ${explanation || '+20 XP'}</div>
+        `;
+        score += 20;
+        updateScoreDisplay();
+    } else {
+        btn.classList.add('wrong');
+        buttons[correct].classList.add('correct');
+        detectiveState.quickAnswers.push({ index, correct: false });
+        feedback.innerHTML = `
+            <div class="feedback-wrong">❌ Неправильно. Правильный ответ: ${String.fromCharCode(65 + correct)}</div>
+        `;
+    }
+    
+    setTimeout(() => {
+        const caseData = detectiveState.currentCase;
+        if (!caseData) return;
+        
+        const nextIndex = index + 1;
+        if (nextIndex < caseData.quickQuestions.length) {
+            showQuickQuestion(caseData, nextIndex);
+        } else if (caseData.caseQuestions && caseData.caseQuestions.length > 0) {
+            detectiveState.phase = 'case';
+            detectiveState.caseQuestionIndex = 0;
+            showCaseQuestion(caseData, 0);
+        } else {
+            completeDetectiveCase(caseData);
+        }
+    }, 1500);
+};
+
+window.toggleCaseAnswer = function(questionIndex, optionId, checkbox) {
+    if (!detectiveState.caseAnswers[questionIndex]) {
+        detectiveState.caseAnswers[questionIndex] = [];
+    }
+    
+    const answers = detectiveState.caseAnswers[questionIndex];
+    const idx = answers.indexOf(optionId);
+    
+    if (checkbox.checked) {
+        if (idx === -1) answers.push(optionId);
+    } else {
+        if (idx !== -1) answers.splice(idx, 1);
+    }
+};
+
+window.submitCaseAnswers = function(index) {
+    const caseData = detectiveState.currentCase;
+    if (!caseData) return;
+    
+    const question = caseData.caseQuestions[index];
+    const selected = detectiveState.caseAnswers[index] || [];
+    
+    let correctCount = 0;
+    let totalCorrect = 0;
+    let hasError = false;
+    let wrongSelected = [];
+    let missingCorrect = [];
+    
+    question.options.forEach(opt => {
+        const isSelected = selected.includes(opt.id);
+        const isCorrect = opt.correct;
+        
+        if (isCorrect) totalCorrect++;
+        if (isSelected && isCorrect) correctCount++;
+        if (isSelected && !isCorrect) {
+            hasError = true;
+            wrongSelected.push(opt.text);
+        }
+        if (!isSelected && isCorrect) {
+            hasError = true;
+            missingCorrect.push(opt.text);
+        }
+    });
+    
+    const feedback = document.getElementById(`case-feedback-${index}`);
+    if (!feedback) return;
+    
+    document.querySelectorAll('.case-checkbox').forEach(cb => cb.disabled = true);
+    document.querySelector('.btn-next-case').disabled = true;
+    
+    if (!hasError && correctCount === totalCorrect) {
+        feedback.innerHTML = `
+            <div class="feedback-correct">✅ Отлично! Все улики собраны верно! +30 XP</div>
+        `;
+        score += 30;
+        updateScoreDisplay();
+        detectiveState.caseAnswers[index] = { correct: true };
+        
+        setTimeout(() => {
+            const nextIndex = index + 1;
+            if (nextIndex < caseData.caseQuestions.length) {
+                showCaseQuestion(caseData, nextIndex);
+            } else {
+                completeDetectiveCase(caseData);
+            }
+        }, 1500);
+    } else {
+        let errorText = '';
+        if (wrongSelected.length > 0) {
+            errorText += `<div class="wrong-answer-detail">❌ Лишние: ${wrongSelected.join(', ')}</div>`;
+        }
+        if (missingCorrect.length > 0) {
+            errorText += `<div class="wrong-answer-detail">⚠️ Не выбрано: ${missingCorrect.join(', ')}</div>`;
+        }
+        
+        feedback.innerHTML = `
+            <div class="feedback-wrong">
+                ❌ Есть ошибки в выборе улик:
+                ${errorText}
+                <div style="margin-top: 8px; color: #94a3b8; font-size: 0.8rem;">💡 Подсказка: выбери только правильные варианты</div>
+            </div>
+        `;
+        
+        setTimeout(() => {
+            document.querySelectorAll('.case-checkbox').forEach(cb => cb.disabled = false);
+            document.querySelector('.btn-next-case').disabled = false;
+        }, 2000);
+    }
+};
+
+function completeDetectiveCase(caseData) {
+    detectiveState.phase = 'complete';
+    
+    const container = document.getElementById('detective-questions');
+    if (!container) return;
+    
+    const totalQuick = caseData.quickQuestions ? caseData.quickQuestions.length : 0;
+    const totalCase = caseData.caseQuestions ? caseData.caseQuestions.length : 0;
+    const total = totalQuick + totalCase;
+    
+    const quickCorrect = detectiveState.quickAnswers.filter(a => a.correct).length;
+    const caseCorrect = detectiveState.caseAnswers.filter(a => a && a.correct).length;
+    const totalCorrect = quickCorrect + caseCorrect;
+    
+    const xpEarned = caseData.xpBonus || 50;
+    const totalEarned = score + xpEarned;
+    
+    container.innerHTML = `
+        <div class="case-complete">
+            <div class="complete-icon">🎉</div>
+            <h3>Расследование завершено!</h3>
+            <div class="complete-stats">
+                <div class="stat-row">
+                    <span>📊 Быстрые вопросы:</span>
+                    <span>${quickCorrect}/${totalQuick}</span>
+                </div>
+                <div class="stat-row">
+                    <span>📋 Сбор улик:</span>
+                    <span>${caseCorrect}/${totalCase}</span>
+                </div>
+                <div class="stat-row">
+                    <span>⭐ Всего XP:</span>
+                    <span>+${xpEarned}</span>
+                </div>
+                <div class="stat-row total">
+                    <span>🏆 Итого XP:</span>
+                    <span>${totalEarned}</span>
+                </div>
+            </div>
+            <div class="complete-buttons">
+                <button class="btn-complete" onclick="window.goToMenu()">🏠 В меню</button>
+                <button class="btn-complete secondary" onclick="window.nextLesson()">➡️ Следующий урок</button>
+            </div>
+        </div>
+    `;
+    
+    localStorage.setItem('hubnet_xp', totalEarned);
+    
+    if (currentModuleData && currentLesson) {
+        const currentIdx = currentModuleData.lessons.findIndex(l => l.id === currentLesson.id);
+        if (currentIdx !== -1 && currentIdx + 1 < currentModuleData.lessons.length) {
+            const nextLessonId = currentModuleData.lessons[currentIdx + 1].id;
+            unlockLesson(nextLessonId);
+            console.log(`🔓 Урок ${nextLessonId} разблокирован!`);
+        }
+    }
+    
+    updateDetectiveProgress(total, total);
+    stopTimer();
+}
+
+function updateDetectiveProgress(current, total) {
+    const el = document.getElementById('detective-progress-text');
+    if (el) {
+        el.textContent = `Вопрос ${Math.min(current, total)} из ${total}`;
+    }
+}
+
+// ============================================================
+// 10. ТАЙМЕР УМЕНЬШЕНИЯ ЗАРЯДКИ
 // ============================================================
 
 function startDrainTimer(rate) {
@@ -348,7 +1023,7 @@ function resumeDrain() {
 }
 
 // ============================================================
-// 8. ОЧКИ И ТАЙМЕР
+// 11. ОЧКИ И ТАЙМЕР
 // ============================================================
 
 function updateScoreDisplay() {
@@ -372,7 +1047,7 @@ function stopTimer() {
 }
 
 // ============================================================
-// 9. ИНДИКАТОРЫ ВОПРОСОВ
+// 12. ИНДИКАТОРЫ ВОПРОСОВ
 // ============================================================
 
 function updateQuestionsIndicators() {
@@ -414,7 +1089,7 @@ function resetQuestionsIndicators() {
 }
 
 // ============================================================
-// 10. РЕНДЕРИНГ И ЛОГИКА ИГРОВОГО ПОЛЯ
+// 13. РЕНДЕРИНГ И ЛОГИКА ИГРОВОГО ПОЛЯ
 // ============================================================
 
 function renderBoard() {
@@ -523,14 +1198,12 @@ async function processMatches(matches) {
     progress = Math.min(100, progress + matches.length * 5);
     updateProgressBar();
 
-    // ===== ЕСЛИ ДОСТИГЛИ 100% — СТАВИМ ФЛАГ =====
     if (progress >= 100) {
         progress = 100;
         updateProgressBar();
         isQuestionPending = true;
         console.log('⚡ Зарядка 100%! Вопрос ждёт окончания комбо...');
     }
-    // ===========================================
 
     matches.forEach(idx => {
         board[idx] = null;
@@ -550,14 +1223,19 @@ async function processMatches(matches) {
         renderBoard();
         updateComboDisplay();
 
-        // === ЕСЛИ ВОПРОС ЖДАЛ — ПОКАЗЫВАЕМ ===
         if (isQuestionPending) {
             isQuestionPending = false;
             console.log('✅ Комбо закончились! Показываем вопрос...');
             if (currentLesson && currentQuestionIndex < currentLesson.questions.length) {
                 triggerQuizQuestion();
             } else {
-                showWinScreen();
+                // === ПОЛНОСТЬЮ УБИРАЕМ WINSCREEN ДЛЯ ИБ ===
+                if (currentModuleId === 'security') {
+                    console.log('🛡️ ИБ — пропускаем winScreen');
+                    // Для ИБ ничего не делаем
+                } else {
+                    showWinScreen();
+                }
             }
         }
     }
@@ -598,7 +1276,7 @@ function updateProgressBar() {
 }
 
 // ============================================================
-// 11. ОТОБРАЖЕНИЕ БАТАРЕЙ И КОМБО
+// 14. ОТОБРАЖЕНИЕ БАТАРЕЙ И КОМБО
 // ============================================================
 
 function updateShieldsDisplay() {
@@ -634,7 +1312,7 @@ function updateComboDisplay() {
 }
 
 // ============================================================
-// 12. КВИЗ (С ИСПОЛЬЗОВАНИЕМ ПЕРЕМЕШАННЫХ ДАННЫХ)
+// 15. КВИЗ
 // ============================================================
 
 function triggerQuizQuestion() {
@@ -663,7 +1341,6 @@ function triggerQuizQuestion() {
     isBoardLocked = true;
     renderBoard();
 
-    // ===== ИСПОЛЬЗУЕМ ПЕРЕМЕШАННЫЕ ДАННЫЕ =====
     const questions = currentLesson.shuffledQuestions || currentLesson.questions;
     const questionData = questions[currentQuestionIndex];
     
@@ -677,7 +1354,6 @@ function triggerQuizQuestion() {
     const correctIdx = questionData.shuffledCorrect !== undefined 
         ? questionData.shuffledCorrect 
         : questionData.correct;
-    // ===========================================
     
     const oldModal = document.getElementById('quiz-modal');
     if (oldModal) oldModal.classList.add('hidden');
@@ -943,16 +1619,39 @@ function showFloatingMessage(text, type = 'info') {
 }
 
 // ============================================================
-// 13. ЭКРАН ПОБЕДЫ
+// 16. ЭКРАН ПОБЕДЫ
 // ============================================================
 
 function showWinScreen() {
+    // === ПОЛНОСТЬЮ ОТКЛЮЧАЕМ ДЛЯ КИБЕРБЕЗОПАСНОСТИ ===
+    if (currentModuleId === 'security') {
+        console.log('🛡️ ИБ — winScreen ОТКЛЮЧЕНА');
+        // Разблокируем следующий урок
+        if (currentModuleData && currentLesson) {
+            const currentIdx = currentModuleData.lessons.findIndex(l => l.id === currentLesson.id);
+            if (currentIdx !== -1 && currentIdx + 1 < currentModuleData.lessons.length) {
+                const nextLessonId = currentModuleData.lessons[currentIdx + 1].id;
+                unlockLesson(nextLessonId);
+                console.log(`🔓 Урок ${nextLessonId} разблокирован!`);
+            }
+        }
+        // Закрываем модалку если открыта
+        const modal = document.getElementById('quiz-modal');
+        if (modal) modal.classList.add('hidden');
+        
+        // Возвращаемся на экран уроков
+        setTimeout(() => {
+            showScreen('lessons-screen');
+        }, 300);
+        return;
+    }
+    // ===================================================
+    
     stopDrainTimer();
     clearInterval(quizTimer);
     resumeDrain();
     stopTimer();
     
-    // Разблокируем следующий урок в текущем модуле
     if (currentModuleData && currentLesson) {
         const currentIdx = currentModuleData.lessons.findIndex(l => l.id === currentLesson.id);
         if (currentIdx !== -1 && currentIdx + 1 < currentModuleData.lessons.length) {
@@ -1017,7 +1716,7 @@ function showWinScreen() {
 }
 
 // ============================================================
-// 14. ЭКРАН ПОРАЖЕНИЯ
+// 17. ЭКРАН ПОРАЖЕНИЯ
 // ============================================================
 
 function showLossScreen() {
@@ -1058,7 +1757,7 @@ function showLossScreen() {
 }
 
 // ============================================================
-// 15. ЭКСПОРТ ФУНКЦИЙ В ГЛОБАЛЬНУЮ ОБЛАСТЬ
+// 18. ЭКСПОРТ ФУНКЦИЙ В ГЛОБАЛЬНУЮ ОБЛАСТЬ
 // ============================================================
 
 window.restartLesson = function() {
@@ -1076,6 +1775,7 @@ window.goToMenu = function() {
     clearInterval(quizTimer);
     resumeDrain();
     stopTimer();
+    resetDetectiveState();
     showScreen('main-app');
 };
 
@@ -1085,6 +1785,7 @@ window.nextLesson = function() {
     clearInterval(quizTimer);
     resumeDrain();
     stopTimer();
+    resetDetectiveState();
     
     if (currentModuleData && currentLesson) {
         const currentIdx = currentModuleData.lessons.findIndex(l => l.id === currentLesson.id);
@@ -1100,7 +1801,7 @@ window.nextLesson = function() {
 };
 
 // ============================================================
-// 16. ОБНОВЛЕНИЕ ДАННЫХ ПРОФИЛЯ
+// 19. ОБНОВЛЕНИЕ ДАННЫХ ПРОФИЛЯ
 // ============================================================
 
 function updateProfileData() {
@@ -1135,7 +1836,7 @@ function updateProfileData() {
 }
 
 // ============================================================
-// 17. ЭКРАН ЗАГРУЗКИ (LINUX STYLE)
+// 20. ЭКРАН ЗАГРУЗКИ (LINUX STYLE)
 // ============================================================
 
 const bootMessages = [
@@ -1255,7 +1956,7 @@ function startLoadingScreen() {
 }
 
 // ============================================================
-// 18. ПЕРЕМЕШИВАНИЕ МАССИВА
+// 21. ПЕРЕМЕШИВАНИЕ МАССИВА
 // ============================================================
 
 function shuffleArray(array) {
@@ -1268,9 +1969,17 @@ function shuffleArray(array) {
 }
 
 // ============================================================
-// 19. ВСПОМОГАТЕЛЬНЫЕ ФУНКЦИИ
+// 22. ВСПОМОГАТЕЛЬНЫЕ ФУНКЦИИ
 // ============================================================
 
 function delay(ms) {
     return new Promise(resolve => setTimeout(resolve, ms));
 }
+
+// ============================================================
+// 23. ЭКСПОРТ В ГЛОБАЛЬНУЮ ОБЛАСТЬ (ДЛЯ ОТЛАДКИ)
+// ============================================================
+
+window.detective = detective;
+window.currentLesson = currentLesson;
+window.currentModuleData = currentModuleData;

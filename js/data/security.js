@@ -6,7 +6,7 @@ export const module = {
     id: 'security',
     title: 'Кибербезопасность',
     icon: '🛡️',
-    game: 'firewall',
+    game: 'detective',
     totalLessons: 16,
     lessons: [
         // ============================================================

@@ -488,6 +488,11 @@ body {
 /* ============================================================
    ЭКРАН 4: ИГРОВОЕ ПОЛЕ
    ============================================================ */
+#game-screen {
+    overflow: hidden;
+    position: relative;
+}
+
 .game-header {
     display: flex;
     justify-content: space-between;
@@ -1345,4 +1350,706 @@ body {
 
 .loading-container.hidden {
     display: none;
+}
+
+/* ============================================================
+   КИБЕРДЕТЕКТИВ (ПОЛНАЯ ВЕРСИЯ)
+/* ============================================================ */
+
+.detective-container {
+    flex: 1;
+    overflow-y: auto;
+    overflow-x: hidden;
+    padding: 8px 4px 12px 4px;
+    min-height: 0;
+    max-height: none;
+    scroll-behavior: smooth;
+}
+
+.detective-container::-webkit-scrollbar {
+    display: none !important;
+    width: 0 !important;
+    height: 0 !important;
+    background: transparent !important;
+}
+
+.detective-container::-webkit-scrollbar-track {
+    background: rgba(0, 0, 0, 0.2);
+    border-radius: 3px;
+}
+
+.detective-container::-webkit-scrollbar-thumb {
+    background: #39ff14;
+    border-radius: 3px;
+}
+
+.detective-content {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    padding-bottom: 10px;
+}
+
+.detective-header {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 0;
+    flex-wrap: wrap;
+}
+
+.detective-icon {
+    font-size: 1.8rem;
+}
+
+.detective-header h2 {
+    font-size: 1.1rem;
+    color: #fff;
+    margin: 0;
+}
+
+.detective-difficulty {
+    font-size: 0.65rem;
+    padding: 2px 10px;
+    border-radius: 12px;
+    margin-left: auto;
+}
+
+.detective-difficulty.easy {
+    background: rgba(34, 197, 94, 0.2);
+    color: #4ade80;
+    border: 1px solid rgba(34, 197, 94, 0.3);
+}
+
+.detective-difficulty.medium {
+    background: rgba(251, 191, 36, 0.2);
+    color: #fbbf24;
+    border: 1px solid rgba(251, 191, 36, 0.3);
+}
+
+.detective-description {
+    background: rgba(30, 41, 59, 0.3);
+    border: 1px solid rgba(255, 255, 255, 0.06);
+    border-radius: 12px;
+    padding: 12px;
+    font-size: 0.85rem;
+    line-height: 1.6;
+    color: #cbd5e1;
+}
+
+.detective-description p {
+    margin: 4px 0;
+}
+
+.detective-description b {
+    color: #39ff14;
+}
+
+.detective-evidence {
+    background: rgba(15, 23, 42, 0.5);
+    border: 1px solid rgba(255, 255, 255, 0.05);
+    border-radius: 12px;
+    padding: 12px;
+    flex-shrink: 0;
+}
+
+.detective-evidence h4 {
+    font-size: 0.8rem;
+    color: #94a3b8;
+    margin-bottom: 8px;
+}
+
+.evidence-block {
+    margin-bottom: 10px;
+}
+
+.evidence-block:last-child {
+    margin-bottom: 0;
+}
+
+.evidence-label {
+    font-size: 0.7rem;
+    color: #94a3b8;
+    font-weight: 600;
+    margin-bottom: 4px;
+    display: block;
+}
+
+/* ============================================================
+   ЛОГИ — БЕЗ СКРОЛЛА, С ПЕРЕНОСОМ СТРОК
+   ============================================================ */
+
+.evidence-data {
+    background: rgba(0, 0, 0, 0.4);
+    border-radius: 8px;
+    padding: 10px 12px;
+    font-family: 'Courier New', monospace;
+    font-size: 0.7rem;
+    color: #39ff14;
+    line-height: 1.8;
+    overflow: hidden !important;
+    white-space: pre-wrap !important;
+    word-wrap: break-word !important;
+    word-break: break-word !important;
+    border: 1px solid rgba(57, 255, 20, 0.05);
+}
+
+.evidence-data .log-line {
+    white-space: pre-wrap !important;
+    word-wrap: break-word !important;
+    word-break: break-word !important;
+    padding: 2px 0;
+    font-size: 0.65rem;
+    color: #39ff14;
+    border-bottom: 1px solid rgba(57, 255, 20, 0.03);
+}
+
+.evidence-data .log-line:last-child {
+    border-bottom: none;
+}
+
+.evidence-data .log-line.highlight {
+    color: #60efff;
+}
+
+.evidence-data .log-line.warn {
+    color: #fbbf24;
+}
+
+.evidence-data .log-line.ok {
+    color: #22c55e;
+}
+
+.evidence-data .log-line.err {
+    color: #ef4444;
+}
+
+/* ============================================================
+   ВОПРОСЫ ДЕТЕКТИВА
+   ============================================================ */
+
+.detective-questions {
+    background: rgba(30, 41, 59, 0.2);
+    border: 1px solid rgba(255, 255, 255, 0.05);
+    border-radius: 12px;
+    padding: 12px;
+    flex-shrink: 0;
+}
+
+.question-block {
+    text-align: left;
+}
+
+.question-number {
+    font-size: 0.7rem;
+    color: #94a3b8;
+    margin-bottom: 6px;
+    font-weight: 500;
+}
+
+.question-text {
+    font-size: 0.95rem;
+    color: #fff;
+    font-weight: 500;
+    margin-bottom: 10px;
+    line-height: 1.5;
+}
+
+.question-options {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.option-btn {
+    background: rgba(15, 23, 42, 0.5);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    color: #e2e8f0;
+    padding: 10px 14px;
+    border-radius: 10px;
+    cursor: pointer;
+    font-size: 0.85rem;
+    text-align: left;
+    transition: all 0.2s ease;
+    font-family: inherit;
+}
+
+.option-btn:hover:not(:disabled) {
+    background: rgba(30, 41, 59, 0.8);
+    border-color: rgba(255, 255, 255, 0.2);
+    transform: translateX(4px);
+}
+
+.option-btn:disabled {
+    cursor: not-allowed;
+    opacity: 0.6;
+    transform: none !important;
+}
+
+.option-btn.correct {
+    background: rgba(34, 197, 94, 0.2) !important;
+    border-color: #22c55e !important;
+    color: #4ade80 !important;
+}
+
+.option-btn.wrong {
+    background: rgba(239, 68, 68, 0.15) !important;
+    border-color: #ef4444 !important;
+    color: #f87171 !important;
+}
+
+.question-hint {
+    font-size: 0.75rem;
+    color: #94a3b8;
+    margin-top: 10px;
+    padding: 6px 12px;
+    background: rgba(251, 191, 36, 0.05);
+    border-radius: 8px;
+    border-left: 3px solid #fbbf24;
+}
+
+.question-feedback {
+    margin-top: 10px;
+    padding: 8px 12px;
+    border-radius: 8px;
+    font-size: 0.85rem;
+}
+
+.feedback-correct {
+    color: #4ade80;
+    background: rgba(34, 197, 94, 0.1);
+    padding: 10px 14px;
+    border-radius: 8px;
+    border-left: 3px solid #22c55e;
+    animation: feedbackPop 0.3s ease;
+}
+
+.feedback-wrong {
+    color: #f87171;
+    background: rgba(239, 68, 68, 0.1);
+    padding: 10px 14px;
+    border-radius: 8px;
+    border-left: 3px solid #ef4444;
+    animation: feedbackPop 0.3s ease;
+}
+
+.wrong-answer-detail {
+    font-size: 0.75rem;
+    color: #f87171;
+    padding: 2px 0;
+}
+
+@keyframes feedbackPop {
+    0% { transform: scale(0.95); opacity: 0; }
+    100% { transform: scale(1); opacity: 1; }
+}
+
+/* ============================================================
+   СБОР УЛИК (ЧЕКБОКСЫ)
+   ============================================================ */
+
+.case-options {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.case-option-label {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    background: rgba(15, 23, 42, 0.3);
+    border: 1px solid rgba(255, 255, 255, 0.05);
+    border-radius: 8px;
+    padding: 8px 12px;
+    cursor: pointer;
+    font-size: 0.85rem;
+    color: #e2e8f0;
+    transition: all 0.2s ease;
+}
+
+.case-option-label:hover:not(.disabled) {
+    background: rgba(30, 41, 59, 0.5);
+    border-color: rgba(255, 255, 255, 0.15);
+}
+
+.case-option-label.disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+}
+
+.case-option-label input[type="checkbox"] {
+    width: 18px;
+    height: 18px;
+    accent-color: #39ff14;
+    cursor: pointer;
+    flex-shrink: 0;
+}
+
+.case-option-label input[type="checkbox"]:disabled {
+    cursor: not-allowed;
+    opacity: 0.5;
+}
+
+.btn-next-case {
+    background: linear-gradient(135deg, #3b82f6, #1d4ed8);
+    color: #fff;
+    border: none;
+    padding: 10px 20px;
+    border-radius: 10px;
+    font-size: 0.85rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    margin-top: 10px;
+    width: 100%;
+    font-family: inherit;
+}
+
+.btn-next-case:hover:not(:disabled) {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 20px rgba(59, 130, 246, 0.4);
+}
+
+.btn-next-case:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+    transform: none !important;
+}
+
+/* ============================================================
+   ЗАВЕРШЕНИЕ КЕЙСА
+   ============================================================ */
+
+.case-complete {
+    text-align: center;
+    padding: 10px 0;
+}
+
+.complete-icon {
+    font-size: 3rem;
+    margin-bottom: 8px;
+    animation: bounce 0.6s ease;
+}
+
+@keyframes bounce {
+    0%, 100% { transform: scale(1); }
+    50% { transform: scale(1.2); }
+}
+
+.case-complete h3 {
+    font-size: 1.2rem;
+    color: #39ff14;
+    margin-bottom: 12px;
+}
+
+.complete-stats {
+    background: rgba(15, 23, 42, 0.5);
+    border-radius: 12px;
+    padding: 12px;
+    margin-bottom: 12px;
+}
+
+.stat-row {
+    display: flex;
+    justify-content: space-between;
+    padding: 4px 0;
+    font-size: 0.85rem;
+    color: #cbd5e1;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.03);
+}
+
+.stat-row:last-child {
+    border-bottom: none;
+}
+
+.stat-row.total {
+    font-weight: 700;
+    color: #fbbf24;
+    font-size: 0.95rem;
+    padding-top: 8px;
+    margin-top: 4px;
+    border-top: 2px solid rgba(255, 255, 255, 0.08);
+}
+
+.complete-buttons {
+    display: flex;
+    gap: 10px;
+}
+
+.btn-complete {
+    flex: 1;
+    background: linear-gradient(135deg, #39ff14, #00ff87);
+    color: #030712;
+    border: none;
+    padding: 12px;
+    border-radius: 10px;
+    font-size: 0.85rem;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    font-family: inherit;
+}
+
+.btn-complete:hover {
+    transform: scale(1.02);
+    box-shadow: 0 4px 20px rgba(57, 255, 20, 0.3);
+}
+
+.btn-complete.secondary {
+    background: rgba(30, 41, 59, 0.5);
+    color: #fff;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.btn-complete.secondary:hover {
+    background: rgba(30, 41, 59, 0.8);
+    box-shadow: none;
+}
+
+/* ============================================================
+   ПРОГРЕСС ДЕТЕКТИВА
+   ============================================================ */
+
+.detective-progress {
+    text-align: center;
+    font-size: 0.7rem;
+    color: #64748b;
+    margin-top: 10px;
+    padding-top: 8px;
+    border-top: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+/* ============================================================
+   АДАПТИВНОСТЬ
+   ============================================================ */
+
+@media (max-width: 400px) {
+    .detective-header h2 {
+        font-size: 0.95rem;
+    }
+    
+    .evidence-data {
+        font-size: 0.6rem;
+        padding: 6px 8px;
+    }
+    
+    .evidence-data .log-line {
+        font-size: 0.55rem;
+    }
+    
+    .question-text {
+        font-size: 0.85rem;
+    }
+    
+    .option-btn {
+        font-size: 0.75rem;
+        padding: 8px 12px;
+    }
+    
+    .complete-buttons {
+        flex-direction: column;
+    }
+}
+/* ============================================================
+   ПРОСТОЙ ТЕСТ
+   ============================================================ */
+
+.simple-test-container {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 10px 0;
+    width: 100%;
+}
+
+.simple-test {
+    width: 100%;
+    max-width: 380px;
+    background: rgba(15, 23, 42, 0.8);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 16px;
+    padding: 24px 20px;
+    text-align: center;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+}
+
+.test-header {
+    display: flex;
+    justify-content: space-between;
+    font-size: 0.8rem;
+    color: #94a3b8;
+    margin-bottom: 16px;
+    padding-bottom: 10px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.test-progress {
+    font-weight: 600;
+    color: #39ff14;
+}
+
+.test-score {
+    color: #fbbf24;
+}
+
+.test-question {
+    font-size: 1.05rem;
+    color: #fff;
+    font-weight: 500;
+    margin-bottom: 18px;
+    line-height: 1.6;
+    text-align: left;
+}
+
+.test-options {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.test-option {
+    background: rgba(30, 41, 59, 0.4);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    color: #e2e8f0;
+    padding: 12px 16px;
+    border-radius: 10px;
+    cursor: pointer;
+    font-size: 0.9rem;
+    text-align: left;
+    transition: all 0.2s ease;
+    font-family: inherit;
+}
+
+.test-option:hover:not(:disabled) {
+    background: rgba(30, 41, 59, 0.8);
+    border-color: rgba(255, 255, 255, 0.2);
+    transform: translateX(4px);
+}
+
+.test-option:disabled {
+    cursor: not-allowed;
+    opacity: 0.6;
+    transform: none !important;
+}
+
+.test-option.correct {
+    background: rgba(34, 197, 94, 0.2) !important;
+    border-color: #22c55e !important;
+    color: #4ade80 !important;
+}
+
+.test-option.wrong {
+    background: rgba(239, 68, 68, 0.15) !important;
+    border-color: #ef4444 !important;
+    color: #f87171 !important;
+}
+
+.test-feedback {
+    margin-top: 12px;
+    padding: 10px 14px;
+    border-radius: 8px;
+    font-size: 0.9rem;
+    min-height: 40px;
+}
+
+.test-feedback .feedback-correct {
+    color: #4ade80;
+    background: rgba(34, 197, 94, 0.1);
+    padding: 10px 14px;
+    border-radius: 8px;
+    border-left: 3px solid #22c55e;
+}
+
+.test-feedback .feedback-wrong {
+    color: #f87171;
+    background: rgba(239, 68, 68, 0.1);
+    padding: 10px 14px;
+    border-radius: 8px;
+    border-left: 3px solid #ef4444;
+}
+
+/* ============================================================
+   ЗАВЕРШЕНИЕ ТЕСТА
+   ============================================================ */
+
+.test-complete {
+    text-align: center;
+    padding: 10px 0;
+}
+
+.test-complete .complete-icon {
+    font-size: 3rem;
+    margin-bottom: 8px;
+}
+
+.test-complete h3 {
+    font-size: 1.2rem;
+    color: #39ff14;
+    margin-bottom: 12px;
+}
+
+.test-stats {
+    background: rgba(15, 23, 42, 0.5);
+    border-radius: 12px;
+    padding: 12px;
+    margin-bottom: 12px;
+}
+
+.test-stats .stat-row {
+    display: flex;
+    justify-content: space-between;
+    padding: 4px 0;
+    font-size: 0.85rem;
+    color: #cbd5e1;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.03);
+}
+
+.test-stats .stat-row:last-child {
+    border-bottom: none;
+}
+
+.test-stats .stat-row.total {
+    font-weight: 700;
+    color: #fbbf24;
+    font-size: 0.95rem;
+    padding-top: 8px;
+    margin-top: 4px;
+    border-top: 2px solid rgba(255, 255, 255, 0.08);
+}
+
+.test-complete .complete-buttons {
+    display: flex;
+    gap: 10px;
+}
+
+.test-complete .complete-buttons .btn-complete {
+    flex: 1;
+    background: linear-gradient(135deg, #39ff14, #00ff87);
+    color: #030712;
+    border: none;
+    padding: 12px;
+    border-radius: 10px;
+    font-size: 0.85rem;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    font-family: inherit;
+}
+
+.test-complete .complete-buttons .btn-complete:hover {
+    transform: scale(1.02);
+    box-shadow: 0 4px 20px rgba(57, 255, 20, 0.3);
+}
+
+.test-complete .complete-buttons .btn-complete.secondary {
+    background: rgba(30, 41, 59, 0.5);
+    color: #fff;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.test-complete .complete-buttons .btn-complete.secondary:hover {
+    background: rgba(30, 41, 59, 0.8);
+    box-shadow: none;
 }
