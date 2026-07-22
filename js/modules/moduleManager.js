@@ -5,8 +5,9 @@
 const modules = {
     networks: () => import('../data/networks.js'),
     security: () => import('../data/security.js'),
-    python: () => import('../data/python.js'),
     qa: () => import('../data/qa.js'),
+    python: () => import('../data/python.js'),
+    auto_tests: () => import('../data/auto_tests.js'),
     sql: () => import('../data/sql.js'),
     devops: () => import('../data/devops.js'),
 };
@@ -25,8 +26,9 @@ export function getModuleInfo(moduleId) {
     const info = {
         networks: { title: 'Компьютерные сети', icon: '🌐' },
         security: { title: 'Кибербезопасность', icon: '🛡️' },
-        python: { title: 'Python основы', icon: '🐍' },
         qa: { title: 'QA тестирование', icon: '🧪' },
+        python: { title: 'Python основы', icon: '🐍' },
+        auto_tests: { title: 'Автотесты основы', icon: '🤖' },
         sql: { title: 'Базы данных (SQL)', icon: '🗄️' },
         devops: { title: 'DevOps', icon: '⚙️' },
     };

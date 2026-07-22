@@ -11,7 +11,7 @@ import {
 } from './js/game.js';
 
 import { 
-    showScreen, 
+    showScreen,              
     renderModuleLessons,
     getUnlockedLessons, 
     unlockLesson,
@@ -62,7 +62,7 @@ let detectiveState = {
     currentCase: null,
     quickQuestionIndex: 0,
     caseQuestionIndex: 0,
-    phase: 'quick', // 'quick' | 'case' | 'complete'
+    phase: 'quick',
     quickAnswers: [],
     caseAnswers: [],
     caseStarted: false
@@ -114,31 +114,43 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    const btnPython = document.getElementById('btn-module-python');
-    if (btnPython) {
-        btnPython.addEventListener('click', () => {
-            alert('🐍 Модуль «Python основы» скоро будет доступен!');
+    const btnQA = document.getElementById('btn-module-qa');
+    if (btnQA) {
+        btnQA.addEventListener('click', async () => {
+            console.log('🧪 Открываем модуль: QA тестирование');
+            await openModule('qa');
         });
     }
 
-    const btnQA = document.getElementById('btn-module-qa');
-    if (btnQA) {
-        btnQA.addEventListener('click', () => {
-            alert('🧪 Модуль «QA тестирование» скоро будет доступен!');
+    const btnPython = document.getElementById('btn-module-python');
+    if (btnPython) {
+        btnPython.addEventListener('click', async () => {
+            console.log('🐍 Открываем модуль: Python основы');
+            await openModule('python');
+        });
+    }
+
+    const btnAutoTests = document.getElementById('btn-module-auto-tests');
+    if (btnAutoTests) {
+        btnAutoTests.addEventListener('click', async () => {
+            console.log('🤖 Открываем модуль: Автотесты основы');
+            await openModule('auto_tests');
         });
     }
 
     const btnSQL = document.getElementById('btn-module-sql');
     if (btnSQL) {
-        btnSQL.addEventListener('click', () => {
-            alert('🗄️ Модуль «Базы данных (SQL)» скоро будет доступен!');
+        btnSQL.addEventListener('click', async () => {
+            console.log('🗄️ Открываем модуль: Базы данных (SQL)');
+            await openModule('sql');
         });
     }
 
     const btnDevOps = document.getElementById('btn-module-devops');
     if (btnDevOps) {
-        btnDevOps.addEventListener('click', () => {
-            alert('⚙️ Модуль «DevOps» скоро будет доступен!');
+        btnDevOps.addEventListener('click', async () => {
+            console.log('⚙️ Открываем модуль: DevOps');
+            await openModule('devops');
         });
     }
 
@@ -253,17 +265,14 @@ async function openModule(moduleId) {
 // ============================================================
 
 function selectLesson(lesson) {
-    // СБРАСЫВАЕМ СТАРЫЕ ДАННЫЕ
     currentQuestionIndex = 0;
     progress = 0;
     
-    // === ОЧИЩАЕМ КОНТЕЙНЕР ТЕСТА ===
     const testContainer = document.getElementById('simple-test-container');
     if (testContainer) {
         testContainer.innerHTML = '';
         testContainer.style.display = 'none';
     }
-    // ================================
     
     currentLesson = lesson;
     
@@ -276,7 +285,6 @@ function selectLesson(lesson) {
     if (titleEl) titleEl.textContent = lesson.title;
     if (textEl) textEl.innerHTML = lesson.lecture;
     
-    // Для урока 16 (итоги) — скрываем кнопку ТОЛЬКО для ИБ
     if (currentModuleId === 'security' && lesson.id === 'security_16') {
         if (practiceBtn) practiceBtn.style.display = 'none';
     } else {
@@ -296,21 +304,18 @@ function startPractice() {
     console.log('🎮 game:', currentModuleData?.game);
     console.log('📖 currentLesson:', currentLesson);
     
-    // СПЕЦИАЛЬНО ДЛЯ security_1 — ПРОСТОЙ ТЕСТ
     if (currentLesson && currentLesson.id === 'security_1') {
         console.log('📝 Урок 1 — запускаем тест');
         startSimpleTest();
         return;
     }
     
-    // Проверяем, какая игра у модуля
     if (currentModuleData && currentModuleData.game === 'detective') {
         console.log('🕵️ Запускаем Кибердетектив!');
         startDetectiveGame();
         return;
     }
     
-    // Если не детектив — запускаем match3
     console.log('🎮 Запускаем Match-3');
     startMatch3Game();
 }
@@ -320,6 +325,14 @@ function startPractice() {
 // ============================================================
 
 function startMatch3Game() {
+    const gameHeader = document.querySelector('.game-header');
+    if (gameHeader) {
+        const logo = gameHeader.querySelector('.game-logo');
+        if (logo) {
+            logo.innerHTML = 'HUB<span class="game-logo-highlight">NET</span>';
+        }
+    }
+    
     progress = 0;
     shields = 3;
     combo = 0;
@@ -379,14 +392,24 @@ function startMatch3Game() {
 function startSimpleTest() {
     console.log('📝 Запускаем простой тест!');
     
-    // Сбрасываем состояние
+    if (currentLesson && currentLesson.questions) {
+        const shuffledQuestions = shuffleArray(currentLesson.questions);
+        currentLesson.shuffledQuestions = shuffledQuestions;
+        
+        currentLesson.shuffledQuestions.forEach(question => {
+            const correctAnswer = question.answers[question.correct];
+            const shuffledAnswers = shuffleArray(question.answers);
+            question.shuffledAnswers = shuffledAnswers;
+            question.shuffledCorrect = shuffledAnswers.indexOf(correctAnswer);
+        });
+    }
+    
     currentQuestionIndex = 0;
     correctAnswers = 0;
     wrongAnswers = 0;
     score = 0;
     startTime = Date.now();
     
-    // СКРЫВАЕМ ВСЁ ЛИШНЕЕ
     const topBar = document.querySelector('.game-top-bar');
     const middleSection = document.querySelector('.game-middle-section');
     const progressContainer = document.querySelector('.progress-container');
@@ -407,7 +430,6 @@ function startSimpleTest() {
     if (timerDisplay) timerDisplay.style.display = 'none';
     if (shieldsDisplay) shieldsDisplay.style.display = 'none';
     
-    // Меняем заголовок
     const gameHeader = document.querySelector('.game-header');
     if (gameHeader) {
         const logo = gameHeader.querySelector('.game-logo');
@@ -425,14 +447,21 @@ function showTestQuestion() {
         return;
     }
     
-    if (currentQuestionIndex >= currentLesson.questions.length) {
+    const questions = currentLesson.shuffledQuestions || currentLesson.questions;
+    
+    if (currentQuestionIndex >= questions.length) {
         finishSimpleTest();
         return;
     }
     
-    const question = currentLesson.questions[currentQuestionIndex];
-    const total = currentLesson.questions.length;
+    const question = questions[currentQuestionIndex];
+    const total = questions.length;
     const current = currentQuestionIndex + 1;
+    
+    const answers = question.shuffledAnswers || question.answers;
+    const correctIdx = question.shuffledCorrect !== undefined 
+        ? question.shuffledCorrect 
+        : question.correct;
     
     let container = document.getElementById('simple-test-container');
     if (!container) {
@@ -451,8 +480,8 @@ function showTestQuestion() {
             </div>
             <div class="test-question">${question.question}</div>
             <div class="test-options">
-                ${question.answers.map((answer, idx) => `
-                    <button class="test-option" data-index="${idx}" onclick="window.handleTestAnswer(${idx}, ${question.correct}, this)">
+                ${answers.map((answer, idx) => `
+                    <button class="test-option" data-index="${idx}" onclick="window.handleTestAnswer(${idx}, ${correctIdx}, this)">
                         ${String.fromCharCode(65 + idx)}. ${answer}
                     </button>
                 `).join('')}
@@ -491,7 +520,6 @@ window.handleTestAnswer = function(selected, correct, btn) {
 };
 
 function finishSimpleTest() {
-    // Сохраняем текущий урок для разблокировки
     const completedLesson = currentLesson;
     
     const total = completedLesson.questions.length;
@@ -571,7 +599,6 @@ function startDetectiveGame() {
     console.log('🕵️ startDetectiveGame вызвана!');
     console.log('📖 currentLesson:', currentLesson);
     
-    // ПРОВЕРКА: если currentLesson = security_1 — ПРЕРЫВАЕМ
     if (currentLesson && currentLesson.id === 'security_1') {
         console.log('⚠️ Урок 1 не должен запускать детектив!');
         showFloatingMessage('❌ Ошибка: неверный урок', 'warning');
@@ -606,6 +633,13 @@ function startDetectiveGame() {
     
     console.log(`✅ Запускаем кейс: ${caseData.title}`);
     
+    if (caseData.quickQuestions) {
+        caseData.shuffledQuickQuestions = shuffleArray(caseData.quickQuestions);
+    }
+    if (caseData.caseQuestions) {
+        caseData.shuffledCaseQuestions = shuffleArray(caseData.caseQuestions);
+    }
+    
     const board = document.getElementById('game-board');
     const shuffleBtn = document.getElementById('btn-shuffle');
     const progressContainer = document.querySelector('.progress-container');
@@ -628,13 +662,11 @@ function startDetectiveGame() {
 }
 
 function showDetectiveUI(caseData) {
-    // === ОЧИЩАЕМ КОНТЕЙНЕР ТЕСТА ===
     const testContainer = document.getElementById('simple-test-container');
     if (testContainer) {
         testContainer.innerHTML = '';
         testContainer.style.display = 'none';
     }
-    // ================================
     
     let container = document.getElementById('detective-container');
     if (!container) {
@@ -647,14 +679,17 @@ function showDetectiveUI(caseData) {
     container.innerHTML = renderDetectiveCase(caseData);
     container.style.display = 'block';
     
-    if (caseData.quickQuestions && caseData.quickQuestions.length > 0) {
+    const quickQuestions = caseData.shuffledQuickQuestions || caseData.quickQuestions;
+    const caseQuestions = caseData.shuffledCaseQuestions || caseData.caseQuestions;
+    
+    if (quickQuestions && quickQuestions.length > 0) {
         detectiveState.phase = 'quick';
         detectiveState.quickQuestionIndex = 0;
-        showQuickQuestion(caseData, 0);
-    } else if (caseData.caseQuestions && caseData.caseQuestions.length > 0) {
+        showQuickQuestion(caseData, 0, quickQuestions);
+    } else if (caseQuestions && caseQuestions.length > 0) {
         detectiveState.phase = 'case';
         detectiveState.caseQuestionIndex = 0;
-        showCaseQuestion(caseData, 0);
+        showCaseQuestion(caseData, 0, caseQuestions);
     }
 }
 
@@ -678,13 +713,17 @@ function hideDetectiveUI() {
     if (gameTopBar) gameTopBar.style.display = 'flex';
     if (gameHeader) {
         const logo = gameHeader.querySelector('.game-logo');
-        if (logo) logo.textContent = 'HUB' + '<span class="game-logo-highlight">NET</span>';
+        if (logo) {
+            logo.innerHTML = 'HUB<span class="game-logo-highlight">NET</span>';
+        }
     }
 }
 
 function renderDetectiveCase(caseData) {
-    const totalQuick = caseData.quickQuestions ? caseData.quickQuestions.length : 0;
-    const totalCase = caseData.caseQuestions ? caseData.caseQuestions.length : 0;
+    const quickQuestions = caseData.shuffledQuickQuestions || caseData.quickQuestions;
+    const caseQuestions = caseData.shuffledCaseQuestions || caseData.caseQuestions;
+    const totalQuick = quickQuestions ? quickQuestions.length : 0;
+    const totalCase = caseQuestions ? caseQuestions.length : 0;
     const total = totalQuick + totalCase;
     
     return `
@@ -718,16 +757,17 @@ function renderDetectiveCase(caseData) {
     `;
 }
 
-function showQuickQuestion(caseData, index) {
+function showQuickQuestion(caseData, index, shuffledQuestions) {
     const container = document.getElementById('detective-questions');
     if (!container) return;
     
-    const questions = caseData.quickQuestions;
+    const questions = shuffledQuestions || caseData.quickQuestions;
     if (!questions || index >= questions.length) {
-        if (caseData.caseQuestions && caseData.caseQuestions.length > 0) {
+        const caseQuestions = caseData.shuffledCaseQuestions || caseData.caseQuestions;
+        if (caseQuestions && caseQuestions.length > 0) {
             detectiveState.phase = 'case';
             detectiveState.caseQuestionIndex = 0;
-            showCaseQuestion(caseData, 0);
+            showCaseQuestion(caseData, 0, caseQuestions);
         } else {
             completeDetectiveCase(caseData);
         }
@@ -738,13 +778,17 @@ function showQuickQuestion(caseData, index) {
     const total = questions.length + (caseData.caseQuestions ? caseData.caseQuestions.length : 0);
     const current = index + 1;
     
+    const shuffledOptions = shuffleArray(question.options);
+    const correctAnswer = question.options[question.correct];
+    const shuffledCorrect = shuffledOptions.indexOf(correctAnswer);
+    
     container.innerHTML = `
         <div class="question-block quick-question">
             <div class="question-number">❓ Вопрос ${current} из ${total}</div>
             <div class="question-text">${question.question}</div>
             <div class="question-options">
-                ${question.options.map((opt, i) => `
-                    <button class="option-btn" data-index="${i}" onclick="window.handleQuickAnswer(${i}, ${question.correct}, this, ${index}, '${question.explanation || ''}')">
+                ${shuffledOptions.map((opt, i) => `
+                    <button class="option-btn" data-index="${i}" onclick="window.handleQuickAnswer(${i}, ${shuffledCorrect}, this, ${index}, '${question.explanation || ''}')">
                         ${String.fromCharCode(65 + i)}. ${opt}
                     </button>
                 `).join('')}
@@ -757,11 +801,11 @@ function showQuickQuestion(caseData, index) {
     updateDetectiveProgress(current, total);
 }
 
-function showCaseQuestion(caseData, index) {
+function showCaseQuestion(caseData, index, shuffledQuestions) {
     const container = document.getElementById('detective-questions');
     if (!container) return;
     
-    const questions = caseData.caseQuestions;
+    const questions = shuffledQuestions || caseData.caseQuestions;
     if (!questions || index >= questions.length) {
         completeDetectiveCase(caseData);
         return;
@@ -772,6 +816,8 @@ function showCaseQuestion(caseData, index) {
     const total = totalQuick + questions.length;
     const current = totalQuick + index + 1;
     
+    const shuffledOptions = shuffleArray(question.options);
+    
     const selectedAnswers = detectiveState.caseAnswers[index] || [];
     
     container.innerHTML = `
@@ -779,7 +825,7 @@ function showCaseQuestion(caseData, index) {
             <div class="question-number">📋 Вопрос ${current} из ${total} (сбор улик)</div>
             <div class="question-text">${question.question}</div>
             <div class="question-options case-options">
-                ${question.options.map((opt, i) => {
+                ${shuffledOptions.map((opt, i) => {
                     const checked = selectedAnswers.includes(opt.id) ? 'checked' : '';
                     return `
                         <label class="case-option-label">
@@ -827,12 +873,15 @@ window.handleQuickAnswer = function(selected, correct, btn, index, explanation) 
         if (!caseData) return;
         
         const nextIndex = index + 1;
-        if (nextIndex < caseData.quickQuestions.length) {
-            showQuickQuestion(caseData, nextIndex);
-        } else if (caseData.caseQuestions && caseData.caseQuestions.length > 0) {
+        const quickQuestions = caseData.shuffledQuickQuestions || caseData.quickQuestions;
+        const caseQuestions = caseData.shuffledCaseQuestions || caseData.caseQuestions;
+        
+        if (nextIndex < quickQuestions.length) {
+            showQuickQuestion(caseData, nextIndex, quickQuestions);
+        } else if (caseQuestions && caseQuestions.length > 0) {
             detectiveState.phase = 'case';
             detectiveState.caseQuestionIndex = 0;
-            showCaseQuestion(caseData, 0);
+            showCaseQuestion(caseData, 0, caseQuestions);
         } else {
             completeDetectiveCase(caseData);
         }
@@ -858,7 +907,8 @@ window.submitCaseAnswers = function(index) {
     const caseData = detectiveState.currentCase;
     if (!caseData) return;
     
-    const question = caseData.caseQuestions[index];
+    const caseQuestions = caseData.shuffledCaseQuestions || caseData.caseQuestions;
+    const question = caseQuestions[index];
     const selected = detectiveState.caseAnswers[index] || [];
     
     let correctCount = 0;
@@ -899,8 +949,8 @@ window.submitCaseAnswers = function(index) {
         
         setTimeout(() => {
             const nextIndex = index + 1;
-            if (nextIndex < caseData.caseQuestions.length) {
-                showCaseQuestion(caseData, nextIndex);
+            if (nextIndex < caseQuestions.length) {
+                showCaseQuestion(caseData, nextIndex, caseQuestions);
             } else {
                 completeDetectiveCase(caseData);
             }
@@ -935,8 +985,10 @@ function completeDetectiveCase(caseData) {
     const container = document.getElementById('detective-questions');
     if (!container) return;
     
-    const totalQuick = caseData.quickQuestions ? caseData.quickQuestions.length : 0;
-    const totalCase = caseData.caseQuestions ? caseData.caseQuestions.length : 0;
+    const quickQuestions = caseData.shuffledQuickQuestions || caseData.quickQuestions;
+    const caseQuestions = caseData.shuffledCaseQuestions || caseData.caseQuestions;
+    const totalQuick = quickQuestions ? quickQuestions.length : 0;
+    const totalCase = caseQuestions ? caseQuestions.length : 0;
     const total = totalQuick + totalCase;
     
     const quickCorrect = detectiveState.quickAnswers.filter(a => a.correct).length;
@@ -1229,10 +1281,8 @@ async function processMatches(matches) {
             if (currentLesson && currentQuestionIndex < currentLesson.questions.length) {
                 triggerQuizQuestion();
             } else {
-                // === ПОЛНОСТЬЮ УБИРАЕМ WINSCREEN ДЛЯ ИБ ===
                 if (currentModuleId === 'security') {
                     console.log('🛡️ ИБ — пропускаем winScreen');
-                    // Для ИБ ничего не делаем
                 } else {
                     showWinScreen();
                 }
@@ -1623,10 +1673,8 @@ function showFloatingMessage(text, type = 'info') {
 // ============================================================
 
 function showWinScreen() {
-    // === ПОЛНОСТЬЮ ОТКЛЮЧАЕМ ДЛЯ КИБЕРБЕЗОПАСНОСТИ ===
     if (currentModuleId === 'security') {
         console.log('🛡️ ИБ — winScreen ОТКЛЮЧЕНА');
-        // Разблокируем следующий урок
         if (currentModuleData && currentLesson) {
             const currentIdx = currentModuleData.lessons.findIndex(l => l.id === currentLesson.id);
             if (currentIdx !== -1 && currentIdx + 1 < currentModuleData.lessons.length) {
@@ -1635,17 +1683,14 @@ function showWinScreen() {
                 console.log(`🔓 Урок ${nextLessonId} разблокирован!`);
             }
         }
-        // Закрываем модалку если открыта
         const modal = document.getElementById('quiz-modal');
         if (modal) modal.classList.add('hidden');
         
-        // Возвращаемся на экран уроков
         setTimeout(() => {
             showScreen('lessons-screen');
         }, 300);
         return;
     }
-    // ===================================================
     
     stopDrainTimer();
     clearInterval(quizTimer);
@@ -1905,7 +1950,7 @@ function startLoadingScreen() {
     let lineIndex = 0;
     let statusIndex = 0;
     const totalLines = bootMessages.length;
-    const intervalTime = Math.floor(5000 / totalLines);
+    const intervalTime = Math.floor(3000 / totalLines);
 
     function addLogLine() {
         if (lineIndex >= totalLines) {
